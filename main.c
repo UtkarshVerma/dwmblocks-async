@@ -35,7 +35,7 @@ static Window root;
 static char commands[len(blocks)][256];
 static char statusbar[len(blocks)][CMDLENGTH];
 static char statusStr[2][len(blocks) * CMDLENGTH +
-			 (len(delimiter) - 1) * (len(blocks) - 1) + 1];
+						 (len(delimiter) - 1) * (len(blocks) - 1) + 1];
 static int statusContinue = 1;
 static void (*writestatus)() = setRoot;
 
@@ -75,8 +75,8 @@ void setupSignals() {
 	sa.sa_flags = SA_SIGINFO;
 	sigaction(SIGUSR1, &sa, NULL);
 	struct sigaction sigchld_action = {
-	    .sa_handler = SIG_DFL,
-	    .sa_flags = SA_NOCLDWAIT,
+		.sa_handler = SIG_DFL,
+		.sa_flags = SA_NOCLDWAIT,
 	};
 	sigaction(SIGCHLD, &sigchld_action, NULL);
 }
@@ -108,7 +108,7 @@ void getCommands(int time) {
 	for (int i = 0; i < len(blocks); i++) {
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) ||
-		    time == -1)
+			time == -1)
 			getCommand(current, statusbar[i]);
 	}
 }
@@ -119,7 +119,7 @@ int getStatus(char *new, char *old) {
 	for (int i = 0; i < len(blocks); i++) {
 		strcat(new, statusbar[i]);
 		if (strlen(statusbar[i]) > (blocks[i].signal != 0) &&
-		    i != len(blocks) - 1)
+			i != len(blocks) - 1)
 			strcat(new, delimiter);
 	}
 	new[strlen(new)] = '\0';
@@ -127,7 +127,7 @@ int getStatus(char *new, char *old) {
 }
 
 void setRoot() {
-	// Only set root if text has changed.
+	// Only set root if text has changed
 	if (!getStatus(statusStr[0], statusStr[1])) return;
 
 	Display *d = XOpenDisplay(NULL);
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
 	const int processID = getpid();
 	for (int i = 0; i < len(blocks); i++)
 		sprintf(commands[i], "%s && kill -%d %d", blocks[i].command,
-			SIGRTMIN + blocks[i].signal, processID);
+				SIGRTMIN + blocks[i].signal, processID);
 
 	for (int i = 0; i < argc; i++)
 		if (!strcmp("-d", argv[i])) writestatus = debug;
@@ -205,4 +205,3 @@ int main(int argc, char **argv) {
 	signal(SIGINT, termHandler);
 	statusLoop();
 }
-
