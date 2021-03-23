@@ -77,7 +77,9 @@ static const Block blocks[] = {
 
 Apart from that you can also modify the block delimiters and width of each block as shown.
 ```c
+// Maximum length of each block, expressed in number of characters.
 #define CMDLENGTH 50
+
 #define delimiter " "
 ```
 
