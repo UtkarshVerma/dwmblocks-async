@@ -15,19 +15,8 @@ typedef struct {
 } Block;
 #include "config.h"
 
-void getCommand(const Block *, char *);
-void getCommands(int);
-int getStatus(char *, char *);
-void setRoot();
 void debug();
-void statusLoop();
-void termHandler(int);
-void signalHandler(int num);
-void buttonHandler(int sig, siginfo_t *si, void *ucontext);
-void getSignalCommands(int signal);
-void setupSignals();
-void signalHandler(int signum);
-void sleepMillis(unsigned long);
+void setRoot();
 
 static Display *dpy;
 static int screen;
@@ -37,48 +26,22 @@ static char statusbar[len(blocks)][CMDLENGTH];
 static char statusStr[2][len(blocks) * CMDLENGTH +
 						 (len(delimiter) - 1) * (len(blocks) - 1) + 1];
 static int statusContinue = 1;
-static void (*writestatus)() = setRoot;
+static void (*writeStatus)() = setRoot;
+
+int gcd(int a, int b) {
+	int temp;
+	while (b > 0) {
+		temp = a % b;
+		a = b;
+		b = temp;
+	}
+	return a;
+}
 
 void replace(char *str, char old, char new) {
-	int i = 0;
-	while (str[i] != '\0') {
-		if (str[i] == old) {
-			str[i] = new;
-			return;
-		}
-		i++;
-	}
-}
-
-void getSignalCommands(int signal) {
-	const Block *current;
-	for (int i = 0; i < len(blocks); i++) {
-		current = blocks + i;
-		if (current->signal == signal)
-			getCommand(current, statusbar[i]);
-	}
-}
-
-void setupSignals() {
-	struct sigaction sa;
-
-	// Handle block update signals
-	for (int i = 0; i < len(blocks); i++) {
-		if (blocks[i].signal > 0) {
-			signal(SIGRTMIN + blocks[i].signal, signalHandler);
-			sigaddset(&sa.sa_mask, SIGRTMIN + blocks[i].signal);
-		}
-	}
-
-	// Handle mouse events
-	sa.sa_sigaction = buttonHandler;
-	sa.sa_flags = SA_SIGINFO;
-	sigaction(SIGUSR1, &sa, NULL);
-	struct sigaction sigchld_action = {
-		.sa_handler = SIG_DFL,
-		.sa_flags = SA_NOCLDWAIT,
-	};
-	sigaction(SIGCHLD, &sigchld_action, NULL);
+	for (char *ch = str; *ch; ch++)
+		if (*ch == old)
+			*ch = new;
 }
 
 // Open process *command and store output in *output
@@ -113,9 +76,19 @@ void getCommands(int time) {
 	}
 }
 
+void getSignalCommands(int signal) {
+	const Block *current;
+	for (int i = 0; i < len(blocks); i++) {
+		current = blocks + i;
+		if (current->signal == signal)
+			getCommand(current, statusbar[i]);
+	}
+}
+
 int getStatus(char *new, char *old) {
 	strcpy(old, new);
 	new[0] = '\0';
+	strcat(new, delimiter);
 	for (int i = 0; i < len(blocks); i++) {
 		strcat(new, statusbar[i]);
 		if (strlen(statusbar[i]) > (blocks[i].signal != 0) &&
@@ -124,6 +97,14 @@ int getStatus(char *new, char *old) {
 	}
 	new[strlen(new)] = '\0';
 	return strcmp(new, old);
+}
+
+void debug() {
+	// Only write out if text has changed
+	if (!getStatus(statusStr[0], statusStr[1])) return;
+
+	write(STDOUT_FILENO, statusStr[0], strlen(statusStr[0]));
+	write(STDOUT_FILENO, "\n", 1);
 }
 
 void setRoot() {
@@ -136,31 +117,6 @@ void setRoot() {
 	root = RootWindow(dpy, screen);
 	XStoreName(dpy, root, statusStr[0]);
 	XCloseDisplay(dpy);
-}
-
-void debug() {
-	// Only write out if text has changed
-	if (!getStatus(statusStr[0], statusStr[1])) return;
-
-	write(STDOUT_FILENO, statusStr[0], strlen(statusStr[0]));
-	write(STDOUT_FILENO, "\n", 1);
-}
-
-void statusLoop() {
-	setupSignals();
-	unsigned long int i = 0;
-	getCommands(-1);
-	while (statusContinue) {
-		getCommands(i);
-		writestatus();
-		sleep(1.0);
-		i++;
-	}
-}
-
-void signalHandler(int signum) {
-	getSignalCommands(signum - SIGRTMIN);
-	writestatus();
 }
 
 void buttonHandler(int sig, siginfo_t *si, void *ucontext) {
@@ -187,9 +143,63 @@ void buttonHandler(int sig, siginfo_t *si, void *ucontext) {
 	}
 }
 
+void signalHandler(int signum) {
+	getSignalCommands(signum - SIGRTMIN);
+	writeStatus();
+}
+
 void termHandler(int sigNum) {
 	statusContinue = 0;
 	exit(0);
+}
+
+void setupSignals() {
+	struct sigaction sa;
+
+	// Handle block update signals
+	for (int i = 0; i < len(blocks); i++) {
+		if (blocks[i].signal > 0) {
+			signal(SIGRTMIN + blocks[i].signal, signalHandler);
+			sigaddset(&sa.sa_mask, SIGRTMIN + blocks[i].signal);
+		}
+	}
+
+	// Handle mouse events
+	sa.sa_sigaction = buttonHandler;
+	sa.sa_flags = SA_SIGINFO;
+	sigaction(SIGUSR1, &sa, NULL);
+	struct sigaction sigchld_action = {
+		.sa_handler = SIG_DFL,
+		.sa_flags = SA_NOCLDWAIT,
+	};
+	sigaction(SIGCHLD, &sigchld_action, NULL);
+}
+
+void statusLoop() {
+	setupSignals();
+
+	unsigned int sleepInterval = -1;
+	for (int i = 0; i < len(blocks); i++)
+		if (blocks[i].interval)
+			sleepInterval = gcd(blocks[i].interval, sleepInterval);
+
+	unsigned int i = 0;
+	struct timespec sleepTime = {sleepInterval, 0};
+	struct timespec toSleep = sleepTime;
+	getCommands(-1);
+
+	while (statusContinue) {
+		// Sleep for `sleepTime` even on being interrupted
+		if (nanosleep(&toSleep, &toSleep) == -1) continue;
+
+		// Write to status after sleeping
+		getCommands(i);
+		writeStatus();
+
+		// After sleep, reset timer and update counter
+		toSleep = sleepTime;
+		i += sleepInterval;
+	}
 }
 
 int main(int argc, char **argv) {
@@ -199,7 +209,7 @@ int main(int argc, char **argv) {
 				SIGRTMIN + blocks[i].signal, processID);
 
 	for (int i = 0; i < argc; i++)
-		if (!strcmp("-d", argv[i])) writestatus = debug;
+		if (!strcmp("-d", argv[i])) writeStatus = debug;
 
 	signal(SIGTERM, termHandler);
 	signal(SIGINT, termHandler);
