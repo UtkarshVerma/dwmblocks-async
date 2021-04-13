@@ -70,8 +70,7 @@ void getCommands(int time) {
 	const Block *current;
 	for (int i = 0; i < len(blocks); i++) {
 		current = blocks + i;
-		if ((current->interval != 0 && time % current->interval == 0) ||
-			time == -1)
+		if (time == -1 || (current->interval != 0 && time % current->interval == 0))
 			getCommand(current, statusbar[i]);
 	}
 }
@@ -177,6 +176,8 @@ void setupSignals() {
 
 void statusLoop() {
 	setupSignals();
+	getCommands(-1);
+	writeStatus();
 
 	unsigned int sleepInterval = -1;
 	for (int i = 0; i < len(blocks); i++)
@@ -186,7 +187,6 @@ void statusLoop() {
 	unsigned int i = 0;
 	struct timespec sleepTime = {sleepInterval, 0};
 	struct timespec toSleep = sleepTime;
-	getCommands(-1);
 
 	while (statusContinue) {
 		// Sleep for `sleepTime` even on being interrupted

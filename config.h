@@ -1,7 +1,7 @@
 #define CMDLENGTH 50
 #define delimiter "  "
 
-static const Block blocks[] = {
+const Block blocks[] = {
 	{"sb-mail", 1800, 1},
 	{"sb-music", 0, 2},
 	{"sb-disk", 1800, 4},
