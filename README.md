@@ -5,8 +5,9 @@ A modular statusbar for `dwm` written in C. You may think of it as `i3blocks`, b
 - Modular
 - Lightweight
 - Suckless
-- Modules are clickable
-- Each module can be externally triggered to update itself
+- Blocks are clickable
+- Blocks are loaded asynchronously
+- Each block can be externally triggered to update itself
 - Compatible with `i3blocks` scripts
 
 > Apart from these features, this build of `dwmblocks` is more optimized and fixes the scroll issue due to which the statusbar flickers on scrolling.
@@ -68,7 +69,7 @@ Update signal | Signal to be used for triggering the block. Must be a positive i
 
 The syntax for defining a block is:
 ```c
-static const Block blocks[] = {
+static Block blocks[] = {
     ...
     {"date", 1800, 1},
     ...
@@ -80,7 +81,7 @@ Apart from that you can also modify the block delimiters and width of each block
 // Maximum length of each block, expressed in number of characters.
 #define CMDLENGTH 50
 
-#define delimiter " "
+#define DELIMITER " "
 ```
 
 ## Signalling changes
