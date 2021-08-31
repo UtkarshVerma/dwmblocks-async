@@ -1,5 +1,5 @@
 #define CMDLENGTH 50
-#define DELIMITER "  "
+#define DELIMITER "<"
 
 typedef struct {
 	char* command;
@@ -18,4 +18,5 @@ static Block blocks[] = {
 	{"sb-volume", 0, 5},
 	{"sb-battery", 5, 6},
 	{"sb-date", 20, 7},
-	{"sb-network", 5, 8}};
+	{"sb-network", 5, 8}
+};

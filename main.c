@@ -100,16 +100,13 @@ void setRoot() {
 	XCloseDisplay(dpy);
 }
 
-void buttonHandler(int sig, siginfo_t *si, void *ucontext) {
-	sig = si->si_value.sival_int >> 8;
-
+void signalHandler(int sig, siginfo_t *si, void *ucontext) {
+	sig -= SIGRTMIN;
 	int i = 0;
 	while (blocks[i].signal != sig) i++;
 	const char button[2] = {'0' + si->si_value.sival_int & 0xff, '\0'};
 	getCommand(i, button);
 }
-
-void signalHandler(int signal) { getSignalCommand(signal - SIGRTMIN); }
 
 void termHandler(int signal) {
 	statusContinue = 0;
@@ -142,17 +139,12 @@ void setupSignals() {
 
 	// Handle block update signals
 	struct sigaction sa;
-	for (int i = 0; i < LEN(blocks); i++) {
-		if (blocks[i].signal > 0) {
-			signal(SIGRTMIN + blocks[i].signal, signalHandler);
-			sigaddset(&sa.sa_mask, SIGRTMIN + blocks[i].signal);
-		}
-	}
-
-	// Handle mouse events
-	sa.sa_sigaction = buttonHandler;
 	sa.sa_flags = SA_SIGINFO;
-	sigaction(SIGUSR1, &sa, NULL);
+	sa.sa_sigaction = signalHandler;
+	for (int i = 0; i < LEN(blocks); i++) {
+		if (blocks[i].signal > 0)
+			sigaction(SIGRTMIN + blocks[i].signal, &sa, NULL);
+	}
 
 	// Handle exit of forks
 	struct sigaction sigchld_action = {
