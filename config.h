@@ -1,21 +1,24 @@
-#define CMDLENGTH 50
+#define CMDLENGTH 65
 #define DELIMITER "  "
 
 typedef struct {
 	char* command;
 	unsigned int interval;
 	unsigned int signal;
+	bool graph;
 	char output[CMDLENGTH];
 	int pipe[2];
 } Block;
 
 static Block blocks[] = {
-	{"sb-mail", 1800, 1},
-	{"sb-music", 0, 2},
-	{"sb-disk", 1800, 4},
-	{"sb-memory", 10, 3},
-	{"sb-loadavg", 10, 9},
-	{"sb-volume", 0, 5},
-	{"sb-battery", 5, 6},
-	{"sb-date", 20, 7},
-	{"sb-network", 5, 8}};
+	{"sb-connection", 10, 0},
+	{"sb-weather", 3600, 16},
+	{"sb-graph-cpu", 2, 0, 1},
+	{"sb-graph-mem", 2, 0, 1},
+	{"sb-gpu-mode", 0, 15},
+	{"sb-brightness", 0, 14},
+	{"sb-volume", 0, 12},
+	{"sb-battery", 5, 11},
+	{"sb-datetime", 1, 10},
+};
+

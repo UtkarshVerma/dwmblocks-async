@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -18,6 +19,7 @@ static int screen;
 static Window root;
 static char statusBar[2][LEN(blocks) * (CMDLENGTH + LEN(DELIMITER) - 1) + 1];
 static int statusContinue = 1;
+static char *blankGraph = "▁▁▁▁▁";
 void (*writeStatus)();
 
 int gcd(int a, int b) {
@@ -49,7 +51,10 @@ void getCommand(int i, const char *button) {
 		sprintf(cmd, "echo \"_$(%s)\"", block->command);
 
 		char *command[] = {"/bin/sh", "-c", cmd, NULL};
-		if (button) setenv("BLOCK_BUTTON", button, 1);
+		if (button) 
+			setenv("BLOCK_BUTTON", button, 1);
+		if (block->graph) 
+			setenv("GRAPH", &block->output[strlen(block->output) - strlen(blankGraph)], 1);
 		setsid();
 		execvp(command[0], command);
 	}
@@ -188,7 +193,7 @@ int main(int argc, char **argv) {
 		Block *block = blocks + i;
 		pipe(block->pipe);
 		fcntl(block->pipe[0], F_SETFL, O_NONBLOCK);
-
+		if (block->graph) strcpy(block->output, blankGraph);
 		if (block->signal) block->output[0] = block->signal;
 	}
 
