@@ -1,22 +1,14 @@
-#define CMDLENGTH 50
+#define CMDLENGTH 50 + 1		// 1 character used to encoding the signal
 #define DELIMITER "<"
 
-typedef struct {
-	char* command;
-	unsigned int interval;
-	unsigned int signal;
-	char output[CMDLENGTH];
-	int pipe[2];
-} Block;
-
-static Block blocks[] = {
-	{"sb-mail", 1800, 17},
-	{"sb-music", 0, 18},
-	{"sb-disk", 1800, 19},
-	{"sb-memory", 10, 20},
-	{"sb-loadavg", 10, 21},
-	{"sb-volume", 0, 22},
-	{"sb-battery", 5, 23},
-	{"sb-date", 20, 24},
-	{"sb-network", 5, 25}
+const Block blocks[] = {
+	BLOCK("sb-mail", 	1800, 17)
+	BLOCK("sb-music",   0,    18)
+	BLOCK("sb-disk",    1800, 19)
+	BLOCK("sb-memory",  1800, 20)
+	BLOCK("sb-loadavg", 1800, 21)
+	BLOCK("sb-volume",  1800, 22)
+	BLOCK("sb-battery", 5,    23)
+	BLOCK("sb-date",    5,    24)
+	BLOCK("sb-network", 5,    25)
 };

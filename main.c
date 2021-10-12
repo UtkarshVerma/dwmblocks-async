@@ -1,5 +1,4 @@
 #include <X11/Xlib.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
@@ -8,6 +7,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#define STR2(a) #a
+#define STRINGIFY(a) STR2(a)
+#define BLOCK(cmd, interval, signal) { .command = "echo \"" STR(__COUNTER__) "$(" cmd ")\"", interval, signal },
+typedef struct {
+	const char *command;
+	const unsigned int interval;
+	const unsigned int signal;
+} Block;
 #include "config.h"
 
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -16,9 +23,11 @@
 static Display *dpy;
 static int screen;
 static Window root;
+static char outputs[LEN(blocks)][CMDLENGTH];
 static char statusBar[2][LEN(blocks) * (CMDLENGTH + LEN(DELIMITER) - 1) + 1];
 static int statusContinue = 1;
 void (*writeStatus)();
+static int pipeFD[2];
 
 int gcd(int a, int b) {
 	int temp;
@@ -37,21 +46,14 @@ void replace(char *str, char old, char new) {
 }
 
 void getCommand(int i, const char *button) {
-	Block *block = blocks + i;
-
+	const Block *block = blocks + i;
 	if (fork() == 0) {
-		dup2(block->pipe[1], STDOUT_FILENO);
-		close(block->pipe[0]);
-		close(block->pipe[1]);
+		dup2(pipeFD[1], STDOUT_FILENO);
+		close(pipeFD[0]);
 
-		// Temporary hack
-		char cmd[1024];
-		sprintf(cmd, "echo \"_$(%s)\"", block->command);
-
-		char *command[] = {"/bin/sh", "-c", cmd, NULL};
-		if (button) setenv("BLOCK_BUTTON", button, 1);
-		setsid();
-		execvp(command[0], command);
+		if (button)
+			setenv("BLOCK_BUTTON", button, 1);
+		execl("/bin/sh", "sh", "-c", block->command);
 	}
 }
 
@@ -69,20 +71,21 @@ void getSignalCommand(int signal) {
 
 int getStatus(char *new, char *old) {
 	strcpy(old, new);
-	new[0] = '\0';
+	new[0] = 0;
 	for (int i = 0; i < LEN(blocks); i++) {
-		Block *block = blocks + i;
-		if (strlen(block->output) > (block->signal != 0))
+		const Block *block = blocks + i;
+		if (strlen(outputs[i]) > 0)
 			strcat(new, DELIMITER);
-		strcat(new, block->output);
+		strcat(new, outputs[i]);
 	}
-	new[strlen(new)] = '\0';
+	new[strlen(new)] = 0;
 	return strcmp(new, old);
 }
 
 void debug() {
 	// Only write out if text has changed
-	if (!getStatus(statusBar[0], statusBar[1])) return;
+	if (!getStatus(statusBar[0], statusBar[1]))
+		return;
 
 	write(STDOUT_FILENO, statusBar[0], strlen(statusBar[0]));
 	write(STDOUT_FILENO, "\n", 1);
@@ -90,10 +93,12 @@ void debug() {
 
 void setRoot() {
 	// Only set root if text has changed
-	if (!getStatus(statusBar[0], statusBar[1])) return;
+	if (!getStatus(statusBar[0], statusBar[1]))
+		return;
 
 	Display *d = XOpenDisplay(NULL);
-	if (d) dpy = d;
+	if (d)
+		dpy = d;
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 	XStoreName(dpy, root, statusBar[0]);
@@ -103,8 +108,9 @@ void setRoot() {
 void signalHandler(int sig, siginfo_t *si, void *ucontext) {
 	sig -= SIGRTMIN;
 	int i = 0;
-	while (blocks[i].signal != sig) i++;
-	const char button[2] = {'0' + si->si_value.sival_int & 0xff, '\0'};
+	while (blocks[i].signal != sig)
+		i++;
+	const char button[2] = {'0' + si->si_value.sival_int & 0xff, 0};
 	getCommand(i, button);
 }
 
@@ -114,22 +120,29 @@ void termHandler(int signal) {
 }
 
 void childHandler() {
-	for (int i = 0; i < LEN(blocks); i++) {
-		Block *block = blocks + i;
+	char i;
+	read(pipeFD[0], &i, 1);
+	i -= '0';
 
-		int bytesToRead = CMDLENGTH;
-		char *output = block->output;
-		if (block->signal) output++, bytesToRead--;
-
-		char placebo;
-		if (read(block->pipe[0], &placebo, 1) == 1) {
-			char buffer[PIPE_BUF];
-			read(block->pipe[0], buffer, PIPE_BUF);
-			replace(buffer, '\n', '\0');
-			strncpy(output, buffer, bytesToRead);
+	char ch;
+	char buffer[LEN(outputs[0]) - 1];
+	int j = 0;
+	while (j < LEN(buffer) && read(pipeFD[0], &ch, 1) == 1) {
+		buffer[j++] = ch;
+		if (ch == '\n')
 			break;
-		}
 	}
+	buffer[j - 1] = 0;
+
+	const Block *block = blocks + i;
+	char *output = outputs[i];
+
+	if (block->signal > 0) {
+		output[0] = block->signal;
+		output++;
+	}
+
+	strcpy(output, buffer);
 	writeStatus();
 }
 
@@ -147,11 +160,7 @@ void setupSignals() {
 	}
 
 	// Handle exit of forks
-	struct sigaction sigchld_action = {
-		.sa_handler = childHandler,
-		.sa_flags = SA_NOCLDWAIT,
-	};
-	sigaction(SIGCHLD, &sigchld_action, NULL);
+	signal(SIGCHLD, childHandler);
 }
 
 void statusLoop() {
@@ -168,7 +177,8 @@ void statusLoop() {
 
 	while (statusContinue) {
 		// Sleep for `sleepTime` even on being interrupted
-		if (nanosleep(&toSleep, &toSleep) == -1) continue;
+		if (nanosleep(&toSleep, &toSleep) == -1)
+			continue;
 
 		// Write to status after sleeping
 		getCommands(i);
@@ -180,17 +190,11 @@ void statusLoop() {
 }
 
 int main(int argc, char **argv) {
+	pipe(pipeFD);
 	writeStatus = setRoot;
 	for (int i = 0; i < argc; i++)
-		if (!strcmp("-d", argv[i])) writeStatus = debug;
-
-	for (int i = 0; i < LEN(blocks); i++) {
-		Block *block = blocks + i;
-		pipe(block->pipe);
-		fcntl(block->pipe[0], F_SETFL, O_NONBLOCK);
-
-		if (block->signal) block->output[0] = block->signal;
-	}
+		if (!strcmp("-d", argv[i]))
+			writeStatus = debug;
 
 	setupSignals();
 	statusLoop();
