@@ -1,4 +1,4 @@
-#define CMDLENGTH 50 + 1		// 1 character used to encoding the signal
+#define CMDLENGTH 50
 #define DELIMITER "<"
 
 const Block blocks[] = {

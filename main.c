@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define STR2(a) #a
 #define STR(a) STR2(a)
 #define BLOCK(cmd, interval, signal) { .command = "echo \"" STR(__COUNTER__) "$(" cmd ")\"", interval, signal },
@@ -17,14 +18,11 @@ typedef struct {
 } Block;
 #include "config.h"
 
-#define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
-#define MIN(x, y) (x > y ? y : x)
-
 static Display *dpy;
 static int screen;
 static Window root;
-static char outputs[LEN(blocks)][CMDLENGTH];
-static char statusBar[2][LEN(blocks) * (CMDLENGTH + LEN(DELIMITER) - 1) + 1];
+static char outputs[LEN(blocks)][CMDLENGTH + 2];
+static char statusBar[2][LEN(blocks) * ((LEN(outputs[0]) - 1) + (LEN(DELIMITER) - 1)) + 1];
 static int statusContinue = 1;
 void (*writeStatus)();
 static int pipeFD[2];
@@ -125,7 +123,7 @@ void childHandler() {
 	i -= '0';
 
 	char ch;
-	char buffer[LEN(outputs[0]) - 1];
+	char buffer[LEN(outputs[0])];
 	int j = 0;
 	while (j < LEN(buffer) && read(pipeFD[0], &ch, 1) == 1) {
 		buffer[j++] = ch;
@@ -136,12 +134,10 @@ void childHandler() {
 
 	const Block *block = blocks + i;
 	char *output = outputs[i];
-
 	if (block->signal > 0) {
 		output[0] = block->signal;
 		output++;
 	}
-
 	strcpy(output, buffer);
 	writeStatus();
 }
