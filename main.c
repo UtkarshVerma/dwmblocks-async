@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 #define STR2(a) #a
-#define STRINGIFY(a) STR2(a)
+#define STR(a) STR2(a)
 #define BLOCK(cmd, interval, signal) { .command = "echo \"" STR(__COUNTER__) "$(" cmd ")\"", interval, signal },
 typedef struct {
 	const char *command;
