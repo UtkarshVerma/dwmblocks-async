@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <X11/Xlib.h>
 #include <limits.h>
 #include <signal.h>
@@ -10,7 +11,7 @@
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define STR2(a) #a
 #define STR(a) STR2(a)
-#define BLOCK(cmd, interval, signal) { .command = "echo \"" STR(__COUNTER__) "$(" cmd ")\"", interval, signal },
+#define BLOCK(cmd, interval, signal) {"echo \"" STR(__COUNTER__) "$(" cmd ")\"", interval, signal},
 typedef struct {
 	const char *command;
 	const unsigned int interval;
@@ -72,7 +73,7 @@ int getStatus(char *new, char *old) {
 	new[0] = 0;
 	for (int i = 0; i < LEN(blocks); i++) {
 		const Block *block = blocks + i;
-		if (strlen(outputs[i]) > 0)
+		if (strlen(outputs[i]) > (block->signal > 0))
 			strcat(new, DELIMITER);
 		strcat(new, outputs[i]);
 	}
@@ -123,14 +124,14 @@ void childHandler() {
 	i -= '0';
 
 	char ch;
-	char buffer[LEN(outputs[0])];
+	char buffer[LEN(outputs[0]) - 1];
 	int j = 0;
-	while (j < LEN(buffer) && read(pipeFD[0], &ch, 1) == 1) {
+	while (j < LEN(buffer) - 1 && read(pipeFD[0], &ch, 1) == 1 && ch != '\n')
 		buffer[j++] = ch;
-		if (ch == '\n')
-			break;
-	}
-	buffer[j - 1] = 0;
+	buffer[j] = 0;
+
+	// Clear the pipe until newline
+	while (ch != '\n' && read(pipeFD[0], &ch, 1) == 1);
 
 	const Block *block = blocks + i;
 	char *output = outputs[i];
