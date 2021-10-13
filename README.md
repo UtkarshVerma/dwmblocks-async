@@ -89,6 +89,9 @@ Apart from that you can also modify the block delimiters and width of each block
 #define CMDLENGTH 50
 
 #define DELIMITER " "
+
+// Adds a trailing delimiter to the statusbar, useful for powerline
+#define TRAILING_DELIMITER
 ```
 
 ### Signalling changes

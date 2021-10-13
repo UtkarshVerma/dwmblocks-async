@@ -45,14 +45,13 @@ void replace(char *str, char old, char new) {
 }
 
 void getCommand(int i, const char *button) {
-	const Block *block = blocks + i;
 	if (fork() == 0) {
 		dup2(pipeFD[1], STDOUT_FILENO);
 		close(pipeFD[0]);
 
 		if (button)
 			setenv("BLOCK_BUTTON", button, 1);
-		execl("/bin/sh", "sh", "-c", block->command);
+		execl("/bin/sh", "sh", "-c", blocks[i].command);
 	}
 }
 
@@ -71,9 +70,13 @@ void getSignalCommand(int signal) {
 int getStatus(char *new, char *old) {
 	strcpy(old, new);
 	new[0] = 0;
+
 	for (int i = 0; i < LEN(blocks); i++) {
-		const Block *block = blocks + i;
-		if (strlen(outputs[i]) > (block->signal > 0))
+		#ifdef TRAILING_DELIMITER
+		if (strlen(outputs[i]) > (blocks[i].signal > 0))
+		#else
+		if (strlen(new) && strlen(outputs[i]) > (blocks[i].signal > 0))
+		#endif
 			strcat(new, DELIMITER);
 		strcat(new, outputs[i]);
 	}
@@ -133,10 +136,9 @@ void childHandler() {
 	// Clear the pipe until newline
 	while (ch != '\n' && read(pipeFD[0], &ch, 1) == 1);
 
-	const Block *block = blocks + i;
 	char *output = outputs[i];
-	if (block->signal > 0) {
-		output[0] = block->signal;
+	if (blocks[i].signal > 0) {
+		output[0] = blocks[i].signal;
 		output++;
 	}
 	strcpy(output, buffer);

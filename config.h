@@ -1,8 +1,9 @@
 #define CMDLENGTH 50
 #define DELIMITER "<"
+#define TRAILING_DELIMITER
 
 const Block blocks[] = {
-	BLOCK("sb-mail", 	1800, 17)
+	BLOCK("sb-mail",    1800, 17)
 	BLOCK("sb-music",   0,    18)
 	BLOCK("sb-disk",    1800, 19)
 	BLOCK("sb-memory",  1800, 20)
