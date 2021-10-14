@@ -25,6 +25,7 @@ static Window root;
 static char outputs[LEN(blocks)][CMDLENGTH + 2];
 static char statusBar[2][LEN(blocks) * ((LEN(outputs[0]) - 1) + (LEN(DELIMITER) - 1)) + 1];
 static int statusContinue = 1;
+static volatile sig_atomic_t updatedBlocks = 0;
 void (*writeStatus)();
 static int pipeFD[2];
 
@@ -141,8 +142,15 @@ void childHandler() {
 		output[0] = blocks[i].signal;
 		output++;
 	}
-	strcpy(output, buffer);
-	writeStatus();
+
+	// Don't write stale output from the pipe. This only happens when signals
+	// are received in a rapid succession.
+	if ((updatedBlocks & (1 << i)) == 0) {
+		updatedBlocks |= 1 << i;
+		strcpy(output, buffer);
+		writeStatus();
+	}
+	updatedBlocks &= ~(1 << i);
 }
 
 void setupSignals() {
