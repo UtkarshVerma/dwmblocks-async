@@ -8,8 +8,8 @@ const Block blocks[] = {
 	BLOCK("sb-disk",    1800, 19)
 	BLOCK("sb-memory",  1800, 20)
 	BLOCK("sb-loadavg", 1800, 21)
-	BLOCK("sb-volume",  1800, 22)
+	BLOCK("sb-volume",  0,    22)
 	BLOCK("sb-battery", 5,    23)
-	BLOCK("sb-date",    5,    24)
+	BLOCK("sb-date",    1,    24)
 	BLOCK("sb-network", 5,    25)
 };
