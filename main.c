@@ -78,7 +78,6 @@ int getStatus(char* new, char* old) {
 }
 
 void updateBlock(int i) {
-	char* output = outputs[i];
 	char buffer[LEN(outputs[0])];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
 	buffer[bytesRead - 1] = '\0';
@@ -90,10 +89,13 @@ void updateBlock(int i) {
 			;
 	}
 
-	if (blocks[i].signal > 0)
-		buffer[0] = blocks[i].signal;
+	char* output = outputs[i];
+	if (blocks[i].signal > 0) {
+		output[0] = blocks[i].signal;
+		output++;
+	}
 
-	strcpy(output, buffer);
+	strcpy(output, buffer + 1);
 }
 
 void debug() {
