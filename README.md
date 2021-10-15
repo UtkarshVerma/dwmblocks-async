@@ -110,5 +110,21 @@ Like `i3blocks`, this build allows you to build in additional actions into your 
 
 For this feature to work, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
 
+Because `dwmblocks-async` creates a child process, it messes up the way the original `statuscmd` patch gets the PID of statusbar. It is necessary to modify the following lines in the definition of `getstatusbarpid()`.
+
+```diff
+				return statuspid;
+		}
+	}
+-	if (!(fp = popen("pidof -s "STATUSBAR, "r")))
++	if (!(fp = popen("pgrep -o "STATUSBAR, "r")))
+		return -1;
+	fgets(buf, sizeof(buf), fp);
+	pclose(fp);
+```
+
+This modification is backwards-compatible with other versions of `dwmblocks` as well.
+
+
 ## Credits
 This work would not have been possible without [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and [Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
