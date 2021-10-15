@@ -72,7 +72,7 @@ Property|Value
 -|-
 Command | The command you wish to execute in your block
 Update interval | Time in seconds, after which you want the block to update. Setting this to `0` will result in the block never being updated.
-Update signal | Signal to be used for triggering the block. Must be a positive integer. 
+Update signal | Signal to be used for triggering the block. Must be a positive integer. If the value is `0`, signal won't be set up for the block and it will be unclickable.
 
 The syntax for defining a block is:
 ```c
