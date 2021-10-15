@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 #include <X11/Xlib.h>
-#include <assert.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -11,6 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define BLOCK(cmd, interval, signal) {"echo \"_$(" cmd ")\"", interval, signal},
 typedef struct {
@@ -129,6 +130,9 @@ void signalHandler() {
 			break;
 		}
 	}
+
+	// Clear the pipe after each poll to limit number of signals handled
+	while (read(signalFD, &info, sizeof(info)) != -1);
 }
 
 void termHandler() {
@@ -154,6 +158,7 @@ void setupSignals() {
 			sigaddset(&sigset, SIGRTMIN + blocks[i].signal);
 
 	signalFD = signalfd(-1, &sigset, 0);
+	fcntl(signalFD, F_SETFL, O_NONBLOCK);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 	event.data.u32 = LEN(blocks) + 1;
 	epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
@@ -180,7 +185,7 @@ void statusLoop() {
 	execBlocks(0);
 
 	while (statusContinue) {
-		int eventCount = epoll_wait(epollFD, events, LEN(events), 1000);
+		int eventCount = epoll_wait(epollFD, events, LEN(events), 10);
 
 		for (int i = 0; i < eventCount; i++) {
 			unsigned int id = events[i].data.u32;
@@ -198,8 +203,8 @@ void statusLoop() {
 		if (eventCount)
 			writeStatus();
 
-		// Poll every 100ms
-		struct timespec toSleep = {0, 100000L};
+		// Poll every `POLL_INTERVAL` milliseconds
+		struct timespec toSleep = {.tv_nsec = POLL_INTERVAL * 1000000UL};
 		nanosleep(&toSleep, &toSleep);
 	}
 }
