@@ -67,9 +67,9 @@ int getStatus(char* new, char* old) {
 
 	for (int i = 0; i < LEN(blocks); i++) {
 #ifdef TRAILING_DELIMITER
-		if (strlen(outputs[i]) > (blocks[i].signal > 0))
+		if (strlen(outputs[i]))
 #else
-		if (strlen(new) && strlen(outputs[i]) > (blocks[i].signal > 0))
+		if (strlen(new) && strlen(outputs[i]))
 #endif
 			strcat(new, DELIMITER);
 		strcat(new, outputs[i]);
@@ -78,18 +78,21 @@ int getStatus(char* new, char* old) {
 }
 
 void updateBlock(int i) {
+	char* output = outputs[i];
 	char buffer[LEN(outputs[0])];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
 	buffer[bytesRead - 1] = '\0';
 
-	// Clear the pipe
 	if (bytesRead == LEN(buffer)) {
+		// Clear the pipe
 		char ch;
 		while (read(pipes[i][0], &ch, 1) == 1 && ch != '\n')
 			;
+	} else if (bytesRead == 2) {
+		output[0] = '\0';
+		return;
 	}
 
-	char* output = outputs[i];
 	if (blocks[i].signal > 0) {
 		output[0] = blocks[i].signal;
 		output++;
