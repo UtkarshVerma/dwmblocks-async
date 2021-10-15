@@ -197,6 +197,10 @@ void statusLoop() {
 		}
 		if (eventCount)
 			writeStatus();
+
+		// Poll every 100ms
+		struct timespec toSleep = {0, 100000L};
+		nanosleep(&toSleep, &toSleep);
 	}
 }
 
