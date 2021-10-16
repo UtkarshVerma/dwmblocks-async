@@ -78,7 +78,8 @@ The syntax for defining a block is:
 ```c
 static Block blocks[] = {
     ...
-    BLOCK("date", 1800, 1)
+    BLOCK("volume", 0,    5)
+    BLOCK("date",   1800, 1)
     ...
 }
 ```
@@ -99,7 +100,7 @@ Most statusbars constantly rerun every script every several seconds to update. T
 
 For example, the volume module has the update signal 5 by default.  Thus, running `pkill -RTMIN+5 dwmblocks` will update it.
 
-You can also run `kill -44 $(pidof dwmblocks)` which will have the same effect, but is faster. Just add 34 to your typical signal number.
+You can also run `kill -39 $(pidof dwmblocks)` which will have the same effect, but is faster. Just add 34 to your typical signal number.
 
 My volume module *never* updates on its own, instead I have this command run along side my volume shortcuts in `dwm` to only update it when relevant.
 
