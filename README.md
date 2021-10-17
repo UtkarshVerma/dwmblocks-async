@@ -76,7 +76,7 @@ Update signal | Signal to be used for triggering the block. Must be a positive i
 
 The syntax for defining a block is:
 ```c
-static Block blocks[] = {
+const Block blocks[] = {
     ...
     BLOCK("volume", 0,    5)
     BLOCK("date",   1800, 1)
