@@ -1,6 +1,7 @@
 #define CMDLENGTH 50
 #define DELIMITER "<"
 #define TRAILING_DELIMITER
+#define CLICKABLE_BLOCKS
 
 const Block blocks[] = {
 	BLOCK("sb-mail",    1800, 17)

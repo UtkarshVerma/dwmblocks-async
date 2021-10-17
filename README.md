@@ -84,32 +84,42 @@ static Block blocks[] = {
 }
 ```
 
-Apart from that you can also modify the block delimiters and width of each block as shown.
+Apart from that you can also modify the following parameters to suit your needs.
 ```c
 // Maximum possible length of output from block, expressed in number of characters.
 #define CMDLENGTH 50
 
+// The status bar's delimiter which appears in between each block.
 #define DELIMITER " "
 
-// Adds a trailing delimiter to the statusbar, useful for powerline
+// Adds a trailing delimiter to the statusbar, useful for powerline.
 #define TRAILING_DELIMITER
+
+// Enable clickability for blocks. Needs `dwm` to be patched appropriately.
+// See the "Clickable blocks" section below.
+#define CLICKABLE_BLOCKS
 ```
 
 ### Signalling changes
-Most statusbars constantly rerun every script every several seconds to update. This is an option here, but a superior choice is giving your module a signal that you can signal to it to update on a relevant event, rather than having it rerun idly.
+Most statusbars constantly rerun every script every several seconds to update. This is an option here, but a superior choice is giving your block a signal that you can signal to it to update on a relevant event, rather than having it rerun idly.
 
-For example, the volume module has the update signal 5 by default.  Thus, running `pkill -RTMIN+5 dwmblocks` will update it.
+For example, the volume block has the update signal 5 by default.  Thus, running `pkill -RTMIN+5 dwmblocks` will update it.
 
 You can also run `kill -39 $(pidof dwmblocks)` which will have the same effect, but is faster. Just add 34 to your typical signal number.
 
-My volume module *never* updates on its own, instead I have this command run along side my volume shortcuts in `dwm` to only update it when relevant.
+My volume block *never* updates on its own, instead I have this command run along side my volume shortcuts in `dwm` to only update it when relevant.
 
-Note that all modules must have different signal numbers.
+Note that all blocks must have different signal numbers.
 
-### Clickable modules
+### Clickable blocks
 Like `i3blocks`, this build allows you to build in additional actions into your scripts in response to click events. You can check out [my statusbar scripts](https://github.com/UtkarshVerma/dotfiles/tree/main/.local/bin/statusbar) as references for using the `$BLOCK_BUTTON` variable.
 
-For this feature to work, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
+To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your `config.h`.
+```c
+#define CLICKABLE_BLOCKS
+```
+
+Apart from that, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
 
 Because `dwmblocks-async` creates a child process, it messes up the way the original `statuscmd` patch gets the PID of statusbar. It is necessary to modify the following lines in the definition of `getstatusbarpid()`.
 

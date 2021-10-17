@@ -12,7 +12,7 @@
 
 #define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
-#define BLOCK(cmd, interval, signal) {"echo \"_$(" cmd ")\"", interval, signal},
+#define BLOCK(cmd, interval, signal) {"echo \"$(" cmd ")\"", interval, signal},
 typedef struct {
 	const char* command;
 	const unsigned int interval;
@@ -20,11 +20,19 @@ typedef struct {
 } Block;
 #include "config.h"
 
+#ifdef CLICKABLE_BLOCKS
+#undef CLICKABLE_BLOCKS
+#define CLICKABLE_BLOCKS 1
+#else
+#undef CLICKABLE_BLOCKS
+#define CLICKABLE_BLOCKS 0
+#endif
+
 static Display* dpy;
 static int screen;
 static Window root;
 static unsigned short int statusContinue = 1;
-static char outputs[LEN(blocks)][CMDLENGTH + 2];
+static char outputs[LEN(blocks)][CMDLENGTH + 1 + CLICKABLE_BLOCKS];
 static char statusBar[2][LEN(blocks) * ((LEN(outputs[0]) - 1) + (LEN(DELIMITER) - 1)) + 1];
 static struct epoll_event event, events[LEN(blocks) + 2];
 static int pipes[LEN(blocks)][2];
@@ -93,17 +101,19 @@ void updateBlock(int i) {
 		char ch;
 		while (read(pipes[i][0], &ch, 1) == 1 && ch != '\n')
 			;
-	} else if (bytesRead == 2) {
+	} else if (bytesRead == 1) {
 		output[0] = '\0';
 		return;
 	}
 
+#if CLICKABLE_BLOCKS
 	if (blocks[i].signal > 0) {
 		output[0] = blocks[i].signal;
 		output++;
 	}
+#endif
 
-	strcpy(output, buffer + 1);
+	strcpy(output, buffer);
 }
 
 void debug() {
