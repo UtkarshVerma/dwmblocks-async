@@ -136,6 +136,7 @@ Because `dwmblocks-async` creates a child process, it messes up the way the orig
 
 This modification is backwards-compatible with other versions of `dwmblocks` as well.
 
+Please note that if you are using [`dwm-flexipatch`](https://github.com/bakkeby/dwm-flexipatch), then you only need to enable the `statuscmd` patch through `patches.h`. There is no need to edit change the definition of `getstatusbarpid()` as the changes have already been applied there through [dwm-flexipatch#190](https://github.com/bakkeby/dwm-flexipatch/pull/190).
 
 ## Credits
 This work would not have been possible without [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and [Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
