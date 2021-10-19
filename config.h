@@ -1,6 +1,6 @@
 #define CMDLENGTH 50
 #define DELIMITER "<"
-#define TRAILING_DELIMITER
+#define LEADING_DELIMITER
 #define CLICKABLE_BLOCKS
 
 const Block blocks[] = {

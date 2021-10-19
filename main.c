@@ -79,7 +79,7 @@ int getStatus(char* new, char* old) {
 	new[0] = '\0';
 
 	for (int i = 0; i < LEN(blocks); i++) {
-#ifdef TRAILING_DELIMITER
+#ifdef LEADING_DELIMITER
 		if (strlen(outputs[i]))
 #else
 		if (strlen(new) && strlen(outputs[i]))

@@ -92,8 +92,8 @@ Apart from that you can also modify the following parameters to suit your needs.
 // The status bar's delimiter which appears in between each block.
 #define DELIMITER " "
 
-// Adds a trailing delimiter to the statusbar, useful for powerline.
-#define TRAILING_DELIMITER
+// Adds a leading delimiter to the statusbar, useful for powerline.
+#define LEADING_DELIMITER
 
 // Enable clickability for blocks. Needs `dwm` to be patched appropriately.
 // See the "Clickable blocks" section below.
