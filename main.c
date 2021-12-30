@@ -94,7 +94,12 @@ void updateBlock(int i) {
 	char* output = outputs[i];
 	char buffer[LEN(outputs[0])];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
-	buffer[bytesRead - 1] = '\0';
+
+	// Trim UTF-8 characters properly
+	int j = bytesRead - 1;
+	while ((buffer[j] & 0b11000000) == 0x80)
+		j--;
+	buffer[j] = '\0';
 
 	if (bytesRead == LEN(buffer)) {
 		// Clear the pipe
