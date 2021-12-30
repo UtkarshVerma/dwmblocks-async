@@ -99,7 +99,12 @@ void updateBlock(int i) {
 	int j = bytesRead - 1;
 	while ((buffer[j] & 0b11000000) == 0x80)
 		j--;
-	buffer[j] = '\0';
+	buffer[j] = ' ';
+
+	// Trim trailing spaces
+	while (buffer[j] == ' ')
+		j--;
+	buffer[j + 1] = '\0';
 
 	if (bytesRead == LEN(buffer)) {
 		// Clear the pipe
