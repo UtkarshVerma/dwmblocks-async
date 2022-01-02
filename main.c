@@ -12,7 +12,7 @@
 
 #define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
-#define BLOCK(cmd, interval, signal) {"echo \"$(" cmd ")\"", interval, signal},
+#define BLOCK(cmd, interval, signal) {"echo \"$(" cmd ")\"", interval, signal}
 typedef struct {
 	const char* command;
 	const unsigned int interval;

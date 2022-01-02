@@ -78,8 +78,8 @@ The syntax for defining a block is:
 ```c
 const Block blocks[] = {
     ...
-    BLOCK("volume", 0,    5)
-    BLOCK("date",   1800, 1)
+    BLOCK("volume", 0,    5),
+    BLOCK("date",   1800, 1),
     ...
 }
 ```
