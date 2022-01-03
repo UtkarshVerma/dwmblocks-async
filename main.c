@@ -12,8 +12,9 @@
 
 #define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
-#define BLOCK(cmd, interval, signal) {"echo \"$(" cmd ")\"", interval, signal}
-typedef struct {
+#define BLOCK(cmd, interval, signal) \
+	{ "echo \"$(" cmd ")\"", interval, signal }
+typedef const struct {
 	const char* command;
 	const unsigned int interval;
 	const unsigned int signal;
@@ -24,8 +25,14 @@ typedef struct {
 #undef CLICKABLE_BLOCKS
 #define CLICKABLE_BLOCKS 1
 #else
-#undef CLICKABLE_BLOCKS
 #define CLICKABLE_BLOCKS 0
+#endif
+
+#ifdef LEADING_DELIMITER
+#undef LEADING_DELIMITER
+#define LEADING_DELIMITER 1
+#else
+#define LEADING_DELIMITER 0
 #endif
 
 static Display* dpy;
@@ -33,7 +40,7 @@ static int screen;
 static Window root;
 static unsigned short int statusContinue = 1;
 static char outputs[LEN(blocks)][CMDLENGTH + 1 + CLICKABLE_BLOCKS];
-static char statusBar[2][LEN(blocks) * ((LEN(outputs[0]) - 1) + (LEN(DELIMITER) - 1)) + 1];
+static char statusBar[2][LEN(blocks) * (LEN(outputs[0]) - 1) + (LEN(blocks) - 1 + LEADING_DELIMITER) * (LEN(DELIMITER) - 1) + 1];
 static struct epoll_event event, events[LEN(blocks) + 2];
 static int pipes[LEN(blocks)][2];
 static int timerPipe[2];
@@ -79,7 +86,7 @@ int getStatus(char* new, char* old) {
 	new[0] = '\0';
 
 	for (int i = 0; i < LEN(blocks); i++) {
-#ifdef LEADING_DELIMITER
+#if LEADING_DELIMITER
 		if (strlen(outputs[i]))
 #else
 		if (strlen(new) && strlen(outputs[i]))
@@ -92,8 +99,13 @@ int getStatus(char* new, char* old) {
 
 void updateBlock(int i) {
 	char* output = outputs[i];
-	char buffer[LEN(outputs[0])];
+	char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
+
+	if (bytesRead == 1) {
+		output[0] = '\0';
+		return;
+	}
 
 	// Trim UTF-8 characters properly
 	int j = bytesRead - 1;
@@ -111,9 +123,6 @@ void updateBlock(int i) {
 		char ch;
 		while (read(pipes[i][0], &ch, 1) == 1 && ch != '\n')
 			;
-	} else if (bytesRead == 1) {
-		output[0] = '\0';
-		return;
 	}
 
 #if CLICKABLE_BLOCKS
