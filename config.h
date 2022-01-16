@@ -9,8 +9,8 @@ const Block blocks[] = {
 	BLOCK("sb-memory",  10,   20),
 	BLOCK("sb-loadavg", 5,    21),
 	BLOCK("sb-mic",     0,    26),
+	BLOCK("sb-record",  0,    27),
 	BLOCK("sb-volume",  0,    22),
 	BLOCK("sb-battery", 5,    23),
-	BLOCK("sb-date",    1,    24),
-	// BLOCK("sb-network", 5,    25),
+	BLOCK("sb-date",    1,    24)
 };

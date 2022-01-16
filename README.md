@@ -44,7 +44,7 @@ What's even better is that you can externally trigger updation of any specific b
 ## Why `dwmblocks-async`?
 Everything I have mentioned till now is offered by the vanilla `dwmblocks`, which is fine for most users. What sets `dwmblocks-async` apart from vanilla `dwmblocks` is the 'async' part. `dwmblocks` executes the commands of each blocks sequentially which means that the mail and date blocks, from above example, would be executed one after the other. This means that the date block won't update unless the mail block is done executing, or vice versa. This is bad for scenarios where one of the blocks takes seconds to execute, and is clearly visible when you first start `dwmblocks`.
 
-This is where the `dwmblocks-async` steps in tells the computer to execute each block asynchronously or simultaneously.
+This is where the async nature of `dwmblocks-async` steps in tells the computer to execute each block asynchronously or simultaneously.
 
 
 ## Installation
