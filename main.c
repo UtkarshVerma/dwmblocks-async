@@ -10,11 +10,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
+
+#define POLL_INTERVAL 50
 #define BLOCK(cmd, interval, signal) \
 	{ "echo \"$(" cmd ")\"", interval, signal }
+
 typedef const struct {
 	const char* command;
 	const unsigned int interval;
@@ -47,6 +49,7 @@ static int pipes[LEN(blocks)][2];
 static int timerPipe[2];
 static int signalFD;
 static int epollFD;
+static unsigned int execLock = 0;
 void (*writeStatus)();
 
 int gcd(int a, int b) {
@@ -65,14 +68,19 @@ void closePipe(int* pipe) {
 }
 
 void execBlock(int i, const char* button) {
+	// Ensure only one child process exists per block at an instance
+	if (execLock & 1 << i)
+		return;
+	// Lock execution of block until current instance finishes execution
+	execLock |= 1 << i;
+
 	if (fork() == 0) {
 		close(pipes[i][0]);
 		dup2(pipes[i][1], STDOUT_FILENO);
 
 		if (button)
 			setenv("BLOCK_BUTTON", button, 1);
-		execl("/bin/sh", "sh", "-c", blocks[i].command);
-		close(pipes[i][1]);
+		execl("/bin/sh", "sh", "-c", blocks[i].command, (char*)NULL);
 	}
 }
 
@@ -103,11 +111,6 @@ void updateBlock(int i) {
 	char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
 
-	if (bytesRead == 1) {
-		output[0] = '\0';
-		return;
-	}
-
 	// Trim UTF-8 characters properly
 	int j = bytesRead - 1;
 	while ((buffer[j] & 0b11000000) == 0x80)
@@ -127,13 +130,16 @@ void updateBlock(int i) {
 	}
 
 #if CLICKABLE_BLOCKS
-	if (blocks[i].signal > 0) {
+	if (bytesRead > 1 && blocks[i].signal > 0) {
 		output[0] = blocks[i].signal;
 		output++;
 	}
 #endif
 
 	strcpy(output, buffer);
+
+	// Remove execution lock for the current block
+	execLock &= ~(1 << i);
 }
 
 void debug() {
@@ -206,14 +212,17 @@ void setupSignals() {
 }
 
 void statusLoop() {
-	while (statusContinue) {
-		int eventCount = epoll_wait(epollFD, events, LEN(events), POLL_INTERVAL / 10);
+	// Poll every `POLL_INTERVAL` milliseconds
+	const struct timespec pollInterval = {.tv_nsec = POLL_INTERVAL * 1000000L};
+	struct timespec toSleep = pollInterval;
 
+	while (statusContinue) {
+		int eventCount = epoll_wait(epollFD, events, LEN(events), 1);
 		for (int i = 0; i < eventCount; i++) {
 			unsigned int id = events[i].data.u32;
 
 			if (id == LEN(blocks)) {
-				unsigned long long int j = 0;
+				unsigned int j = 0;
 				read(timerPipe[0], &j, sizeof(j));
 				execBlocks(j);
 			} else if (id < LEN(blocks)) {
@@ -222,12 +231,13 @@ void statusLoop() {
 				signalHandler();
 			}
 		}
-		if (eventCount)
+		if (eventCount != -1)
 			writeStatus();
 
-		// Poll every `POLL_INTERVAL` milliseconds
-		struct timespec toSleep = {.tv_nsec = POLL_INTERVAL * 1000000UL};
-		nanosleep(&toSleep, &toSleep);
+		// Sleep for `pollInterval` even on being interrupted
+		while (nanosleep(&toSleep, &toSleep) == -1)
+			;
+		toSleep = pollInterval;
 	}
 }
 
@@ -247,18 +257,16 @@ void timerLoop() {
 	struct timespec toSleep = sleepTime;
 
 	while (1) {
-		// Sleep for `sleepTime` even on being interrupted
-		if (nanosleep(&toSleep, &toSleep) == -1)
-			continue;
-
 		// Notify parent to update blocks
 		write(timerPipe[1], &i, sizeof(i));
 
-		// After sleep, reset timer and update counter
-		toSleep = sleepTime;
-
-		// Wrap `i` to the interval [1, maxInterval]
+		// Wrap `i` to the interval [1, `maxInterval`]
 		i = (i + sleepInterval - 1) % maxInterval + 1;
+
+		// Sleep for `sleepTime` even on being interrupted
+		while (nanosleep(&toSleep, &toSleep) == -1)
+			;
+		toSleep = sleepTime;
 	}
 
 	close(timerPipe[1]);
