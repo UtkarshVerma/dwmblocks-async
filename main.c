@@ -12,6 +12,7 @@
 
 #define POLL_INTERVAL 50
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define MAX(a, b) (a > b ? a : b)
 #define BLOCK(cmd, interval, signal) \
 	{ "echo \"$(" cmd ")\"", interval, signal }
 typedef const struct {
@@ -75,7 +76,7 @@ void execBlock(int i, const char* button) {
 	}
 }
 
-void execBlocks(unsigned long long int time) {
+void execBlocks(unsigned int time) {
 	for (int i = 0; i < LEN(blocks); i++)
 		if (time == 0 || (blocks[i].interval != 0 && time % blocks[i].interval == 0))
 			execBlock(i, NULL);
@@ -205,8 +206,6 @@ void setupSignals() {
 }
 
 void statusLoop() {
-	execBlocks(0);
-
 	while (statusContinue) {
 		int eventCount = epoll_wait(epollFD, events, LEN(events), POLL_INTERVAL / 10);
 
@@ -235,12 +234,15 @@ void statusLoop() {
 void timerLoop() {
 	close(timerPipe[0]);
 
-	unsigned int sleepInterval = -1;
+	unsigned int sleepInterval = 0;
+	unsigned int maxInterval = 0;
 	for (int i = 0; i < LEN(blocks); i++)
-		if (blocks[i].interval)
+		if (blocks[i].interval) {
+			maxInterval = MAX(blocks[i].interval, maxInterval);
 			sleepInterval = gcd(blocks[i].interval, sleepInterval);
+		}
 
-	unsigned long long int i = 0;
+	unsigned int i = 0;
 	struct timespec sleepTime = {sleepInterval, 0};
 	struct timespec toSleep = sleepTime;
 
@@ -254,7 +256,9 @@ void timerLoop() {
 
 		// After sleep, reset timer and update counter
 		toSleep = sleepTime;
-		i += sleepInterval;
+
+		// Wrap `i` to the interval [1, maxInterval]
+		i = (i + sleepInterval - 1) % maxInterval + 1;
 	}
 
 	close(timerPipe[1]);
@@ -285,10 +289,10 @@ int main(const int argc, const char* argv[]) {
 
 	init();
 
-	if (fork() == 0)
-		timerLoop();
-	else
+	if (fork())
 		statusLoop();
+	else
+		timerLoop();
 
 	close(epollFD);
 	close(signalFD);
