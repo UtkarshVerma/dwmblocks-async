@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 #include <X11/Xlib.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +11,6 @@
 
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
-
-#define POLL_INTERVAL 50
 #define BLOCK(cmd, interval, signal) \
 	{ "echo \"$(" cmd ")\"", interval, signal }
 
@@ -176,10 +173,6 @@ void signalHandler() {
 			break;
 		}
 	}
-
-	// Clear the pipe after each poll to limit number of signals handled
-	while (read(signalFD, &info, sizeof(info)) != -1)
-		;
 }
 
 void termHandler() {
@@ -205,19 +198,14 @@ void setupSignals() {
 			sigaddset(&sigset, SIGRTMIN + blocks[i].signal);
 
 	signalFD = signalfd(-1, &sigset, 0);
-	fcntl(signalFD, F_SETFL, O_NONBLOCK);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 	event.data.u32 = LEN(blocks) + 1;
 	epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
 }
 
 void statusLoop() {
-	// Poll every `POLL_INTERVAL` milliseconds
-	const struct timespec pollInterval = {.tv_nsec = POLL_INTERVAL * 1000000L};
-	struct timespec toSleep = pollInterval;
-
 	while (statusContinue) {
-		int eventCount = epoll_wait(epollFD, events, LEN(events), 1);
+		int eventCount = epoll_wait(epollFD, events, LEN(events), -1);
 		for (int i = 0; i < eventCount; i++) {
 			unsigned int id = events[i].data.u32;
 
@@ -233,11 +221,6 @@ void statusLoop() {
 		}
 		if (eventCount != -1)
 			writeStatus();
-
-		// Sleep for `pollInterval` even on being interrupted
-		while (nanosleep(&toSleep, &toSleep) == -1)
-			;
-		toSleep = pollInterval;
 	}
 }
 
@@ -297,10 +280,11 @@ int main(const int argc, const char* argv[]) {
 
 	init();
 
-	if (fork())
-		statusLoop();
-	else
+	// Ensure that `timerLoop()` only runs in the fork
+	if (fork() == 0)
 		timerLoop();
+	else
+		statusLoop();
 
 	close(epollFD);
 	close(signalFD);
