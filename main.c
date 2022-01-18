@@ -180,8 +180,16 @@ void termHandler() {
 }
 
 void setupSignals() {
-	signal(SIGTERM, termHandler);
+	// Ignore all realtime signals
+	sigset_t ignoredSignals;
+	sigemptyset(&ignoredSignals);
+	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
+		sigaddset(&ignoredSignals, i);
+	sigprocmask(SIG_BLOCK, &ignoredSignals, NULL);
+
+	// Handle termination signals
 	signal(SIGINT, termHandler);
+	signal(SIGTERM, termHandler);
 
 	// Avoid zombie subprocesses
 	struct sigaction sa;
@@ -191,14 +199,12 @@ void setupSignals() {
 	sigaction(SIGCHLD, &sa, 0);
 
 	// Handle block update signals
-	sigset_t sigset;
-	sigemptyset(&sigset);
+	sigset_t handledSignals;
+	sigemptyset(&handledSignals);
 	for (int i = 0; i < LEN(blocks); i++)
 		if (blocks[i].signal > 0)
-			sigaddset(&sigset, SIGRTMIN + blocks[i].signal);
-
-	signalFD = signalfd(-1, &sigset, 0);
-	sigprocmask(SIG_BLOCK, &sigset, NULL);
+			sigaddset(&handledSignals, SIGRTMIN + blocks[i].signal);
+	signalFD = signalfd(-1, &handledSignals, 0);
 	event.data.u32 = LEN(blocks) + 1;
 	epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
 }
@@ -239,7 +245,7 @@ void timerLoop() {
 	struct timespec sleepTime = {sleepInterval, 0};
 	struct timespec toSleep = sleepTime;
 
-	while (1) {
+	while (statusContinue) {
 		// Notify parent to update blocks
 		write(timerPipe[1], &i, sizeof(i));
 
