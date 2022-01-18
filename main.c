@@ -46,7 +46,7 @@ static int pipes[LEN(blocks)][2];
 static int timerPipe[2];
 static int signalFD;
 static int epollFD;
-static unsigned int execLock = 0;
+static int execLock = 0;
 void (*writeStatus)();
 
 int gcd(int a, int b) {
@@ -74,10 +74,12 @@ void execBlock(int i, const char* button) {
 	if (fork() == 0) {
 		close(pipes[i][0]);
 		dup2(pipes[i][1], STDOUT_FILENO);
+		close(pipes[i][1]);
 
 		if (button)
 			setenv("BLOCK_BUTTON", button, 1);
 		execl("/bin/sh", "sh", "-c", blocks[i].command, (char*)NULL);
+		_exit(1);
 	}
 }
 
@@ -213,7 +215,7 @@ void statusLoop() {
 	while (statusContinue) {
 		int eventCount = epoll_wait(epollFD, events, LEN(events), -1);
 		for (int i = 0; i < eventCount; i++) {
-			unsigned int id = events[i].data.u32;
+			unsigned short int id = events[i].data.u32;
 
 			if (id == LEN(blocks)) {
 				unsigned int j = 0;
@@ -259,6 +261,7 @@ void timerLoop() {
 	}
 
 	close(timerPipe[1]);
+	_exit(0);
 }
 
 void init() {
