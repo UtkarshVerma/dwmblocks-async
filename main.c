@@ -186,9 +186,18 @@ void termHandler() {
 	statusContinue = 0;
 }
 
+void dummysighandler(int signum)
+{
+	return;
+}
+
 void setupSignals() {
 	signal(SIGTERM, termHandler);
 	signal(SIGINT, termHandler);
+
+	// initialize signals with dummy handler
+	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
+		signal(i, dummysighandler);
 
 	// Avoid zombie subprocesses
 	struct sigaction sa;
@@ -309,3 +318,4 @@ int main(const int argc, const char* argv[]) {
 		closePipe(pipes[i]);
 	return 0;
 }
+
