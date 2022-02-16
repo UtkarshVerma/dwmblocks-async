@@ -38,7 +38,7 @@ typedef const struct {
 static Display* dpy;
 static int screen;
 static Window root;
-static unsigned short int statusContinue = 1;
+static unsigned short statusContinue = 1;
 static char outputs[LEN(blocks)][CMDLENGTH + 1 + CLICKABLE_BLOCKS];
 static char statusBar[2][LEN(blocks) * (LEN(outputs[0]) - 1) + (LEN(blocks) - 1 + LEADING_DELIMITER) * (LEN(DELIMITER) - 1) + 1];
 static struct epoll_event event, events[LEN(blocks) + 2];
@@ -167,9 +167,16 @@ void setRoot() {
 void signalHandler() {
 	struct signalfd_siginfo info;
 	read(signalFD, &info, sizeof(info));
+	unsigned int signal = info.ssi_signo;
+
+	// Update all blocks on receiving SIGUSR1
+	if (signal == SIGUSR1) {
+		execBlocks(0);
+		return;
+	}
 
 	for (int j = 0; j < LEN(blocks); j++) {
-		if (blocks[j].signal == info.ssi_signo - SIGRTMIN) {
+		if (blocks[j].signal == signal - SIGRTMIN) {
 			char button[] = {'0' + info.ssi_int & 0xff, 0};
 			execBlock(j, button);
 			break;
@@ -182,9 +189,10 @@ void termHandler() {
 }
 
 void setupSignals() {
-	// Ignore all realtime signals
+	// Ignore SIGUSR1 and all realtime signals
 	sigset_t ignoredSignals;
 	sigemptyset(&ignoredSignals);
+	sigaddset(&ignoredSignals, SIGUSR1);
 	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
 		sigaddset(&ignoredSignals, i);
 	sigprocmask(SIG_BLOCK, &ignoredSignals, NULL);
@@ -203,6 +211,7 @@ void setupSignals() {
 	// Handle block update signals
 	sigset_t handledSignals;
 	sigemptyset(&handledSignals);
+	sigaddset(&handledSignals, SIGUSR1);
 	for (int i = 0; i < LEN(blocks); i++)
 		if (blocks[i].signal > 0)
 			sigaddset(&handledSignals, SIGRTMIN + blocks[i].signal);
@@ -215,7 +224,7 @@ void statusLoop() {
 	while (statusContinue) {
 		int eventCount = epoll_wait(epollFD, events, LEN(events), -1);
 		for (int i = 0; i < eventCount; i++) {
-			unsigned short int id = events[i].data.u32;
+			unsigned short id = events[i].data.u32;
 
 			if (id == LEN(blocks)) {
 				unsigned int j = 0;

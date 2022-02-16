@@ -113,6 +113,8 @@ My volume block *never* updates on its own, instead I have this command run alon
 
 Note that all blocks must have different signal numbers.
 
+Apart from this, you can also refresh all the blocks by sending `SIGUSR1` to `dwmblocks-async` using either `pkill -SIGUSR1 dwmblocks` or `kill -10 $(pidof dwmblocks)`.
+
 ### Clickable blocks
 Like `i3blocks`, this build allows you to build in additional actions into your scripts in response to click events. You can check out [my statusbar scripts](https://github.com/UtkarshVerma/dotfiles/tree/main/.local/bin/statusbar) as references for using the `$BLOCK_BUTTON` variable.
 
