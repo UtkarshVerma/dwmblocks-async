@@ -114,6 +114,9 @@ void updateBlock(int i) {
 	int j = bytesRead - 1;
 	while ((buffer[j] & 0b11000000) == 0x80)
 		j--;
+
+	// Cache last character and replace it with a trailing space
+	char ch = buffer[j];
 	buffer[j] = ' ';
 
 	// Trim trailing spaces
@@ -121,10 +124,9 @@ void updateBlock(int i) {
 		j--;
 	buffer[j + 1] = '\0';
 
+	// Clear the pipe
 	if (bytesRead == LEN(buffer)) {
-		// Clear the pipe
-		char ch;
-		while (read(pipes[i][0], &ch, 1) == 1 && ch != '\n')
+		while (ch != '\n' && read(pipes[i][0], &ch, 1) == 1)
 			;
 	}
 
