@@ -1,4 +1,4 @@
-#define CMDLENGTH 60
+#define CMDLENGTH 45
 #define DELIMITER "  "
 #define CLICKABLE_BLOCKS
 

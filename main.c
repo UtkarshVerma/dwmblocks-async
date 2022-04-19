@@ -39,14 +39,17 @@ static Display* dpy;
 static int screen;
 static Window root;
 static unsigned short statusContinue = 1;
-static char outputs[LEN(blocks)][CMDLENGTH + 1 + CLICKABLE_BLOCKS];
-static char statusBar[2][LEN(blocks) * (LEN(outputs[0]) - 1) + (LEN(blocks) - 1 + LEADING_DELIMITER) * (LEN(DELIMITER) - 1) + 1];
 static struct epoll_event event, events[LEN(blocks) + 2];
 static int pipes[LEN(blocks)][2];
 static int timerPipe[2];
 static int signalFD;
 static int epollFD;
 static int execLock = 0;
+
+// Longest UTF-8 character is 4 bytes long
+static char outputs[LEN(blocks)][CMDLENGTH * 4 + 1 + CLICKABLE_BLOCKS];
+static char statusBar[2][LEN(blocks) * (LEN(outputs[0]) - 1) + (LEN(blocks) - 1 + LEADING_DELIMITER) * (LEN(DELIMITER) - 1) + 1];
+
 void (*writeStatus)();
 
 int gcd(int a, int b) {
@@ -110,19 +113,21 @@ void updateBlock(int i) {
 	char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
 	int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
 
-	// Trim UTF-8 characters properly
-	int j = bytesRead - 1;
-	while ((buffer[j] & 0b11000000) == 0x80)
-		j--;
+	// Trim UTF-8 string to desired length
+	int count = 0, j = 0;
+	while (buffer[j] != '\n' && count <= CMDLENGTH) {
+		// Increment count for non-continuation bytes
+		if ((buffer[j++] & 0xc0) != 0x80)
+			count++;
+	}
 
 	// Cache last character and replace it with a trailing space
 	char ch = buffer[j];
 	buffer[j] = ' ';
 
 	// Trim trailing spaces
-	while (buffer[j] == ' ')
-		j--;
-	buffer[j + 1] = '\0';
+	while (j >= 0 && buffer[j] == ' ') j--;
+	buffer[j + 1] = 0;
 
 	// Clear the pipe
 	if (bytesRead == LEN(buffer)) {
