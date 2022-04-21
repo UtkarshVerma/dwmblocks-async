@@ -41,7 +41,7 @@ static Window root;
 static unsigned short statusContinue = 1;
 static struct epoll_event event;
 static int pipes[LEN(blocks)][2];
-static int timer = 0, timerTick = 0, maxInterval = 0;
+static int timer = 0, timerTick = 0, maxInterval = 1;
 static int signalFD;
 static int epollFD;
 static int execLock = 0;
