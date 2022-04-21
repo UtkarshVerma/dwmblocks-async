@@ -39,9 +39,9 @@ static Display* dpy;
 static int screen;
 static Window root;
 static unsigned short statusContinue = 1;
-static struct epoll_event event, events[LEN(blocks) + 2];
+static struct epoll_event event;
 static int pipes[LEN(blocks)][2];
-static int timerPipe[2];
+static int timer = 0, timerTick = 0, maxInterval = 0;
 static int signalFD;
 static int epollFD;
 static int execLock = 0;
@@ -176,8 +176,17 @@ void signalHandler() {
 	read(signalFD, &info, sizeof(info));
 	unsigned int signal = info.ssi_signo;
 
-	// Update all blocks on receiving SIGUSR1
-	if (signal == SIGUSR1) {
+	switch (signal) {
+	case SIGALRM:
+		// Schedule the next timer event and execute blocks
+		alarm(timerTick);
+		execBlocks(timer);
+
+		// Wrap `timer` to the interval [1, `maxInterval`]
+		timer = (timer + timerTick - 1) % maxInterval + 1;
+		return;
+	case SIGUSR1:
+		// Update all blocks on receiving SIGUSR1
 		execBlocks(0);
 		return;
 	}
@@ -196,13 +205,25 @@ void termHandler() {
 }
 
 void setupSignals() {
-	// Ignore SIGUSR1 and all realtime signals
-	sigset_t ignoredSignals;
-	sigemptyset(&ignoredSignals);
-	sigaddset(&ignoredSignals, SIGUSR1);
+	sigset_t handledSignals;
+	sigemptyset(&handledSignals);
+	sigaddset(&handledSignals, SIGUSR1);
+	sigaddset(&handledSignals, SIGALRM);
+
+	// Append all block signals to `handledSignals`
+	for (int i = 0; i < LEN(blocks); i++)
+		if (blocks[i].signal > 0)
+			sigaddset(&handledSignals, SIGRTMIN + blocks[i].signal);
+
+	// Create a signal file descriptor for epoll to watch
+	signalFD = signalfd(-1, &handledSignals, 0);
+	event.data.u32 = LEN(blocks);
+	epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
+
+	// Block all realtime and handled signals
 	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
-		sigaddset(&ignoredSignals, i);
-	sigprocmask(SIG_BLOCK, &ignoredSignals, NULL);
+		sigaddset(&handledSignals, i);
+	sigprocmask(SIG_BLOCK, &handledSignals, NULL);
 
 	// Handle termination signals
 	signal(SIGINT, termHandler);
@@ -214,85 +235,44 @@ void setupSignals() {
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDWAIT;
 	sigaction(SIGCHLD, &sa, 0);
-
-	// Handle block update signals
-	sigset_t handledSignals;
-	sigemptyset(&handledSignals);
-	sigaddset(&handledSignals, SIGUSR1);
-	for (int i = 0; i < LEN(blocks); i++)
-		if (blocks[i].signal > 0)
-			sigaddset(&handledSignals, SIGRTMIN + blocks[i].signal);
-	signalFD = signalfd(-1, &handledSignals, 0);
-	event.data.u32 = LEN(blocks) + 1;
-	epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
 }
 
 void statusLoop() {
+	// Update all blocks initially
+	kill(0, SIGALRM);
+
+	struct epoll_event events[LEN(blocks) + 1];
 	while (statusContinue) {
 		int eventCount = epoll_wait(epollFD, events, LEN(events), -1);
 		for (int i = 0; i < eventCount; i++) {
 			unsigned short id = events[i].data.u32;
-
-			if (id == LEN(blocks)) {
-				unsigned int j = 0;
-				read(timerPipe[0], &j, sizeof(j));
-				execBlocks(j);
-			} else if (id < LEN(blocks)) {
-				updateBlock(events[i].data.u32);
-			} else {
+			if (id < LEN(blocks))
+				updateBlock(id);
+			else
 				signalHandler();
-			}
 		}
+
 		if (eventCount != -1)
 			writeStatus();
 	}
 }
 
-void timerLoop() {
-	close(timerPipe[0]);
-
-	unsigned int sleepInterval = 0;
-	unsigned int maxInterval = 0;
-	for (int i = 0; i < LEN(blocks); i++)
-		if (blocks[i].interval) {
-			maxInterval = MAX(blocks[i].interval, maxInterval);
-			sleepInterval = gcd(blocks[i].interval, sleepInterval);
-		}
-
-	unsigned int i = 0;
-	struct timespec sleepTime = {sleepInterval, 0};
-	struct timespec toSleep = sleepTime;
-
-	while (statusContinue) {
-		// Notify parent to update blocks
-		write(timerPipe[1], &i, sizeof(i));
-
-		// Wrap `i` to the interval [1, `maxInterval`]
-		i = (i + sleepInterval - 1) % maxInterval + 1;
-
-		// Sleep for `sleepTime` even on being interrupted
-		while (nanosleep(&toSleep, &toSleep) == -1)
-			;
-		toSleep = sleepTime;
-	}
-
-	close(timerPipe[1]);
-	_exit(0);
-}
-
 void init() {
-	epollFD = epoll_create(LEN(blocks) + 1);
+	epollFD = epoll_create(LEN(blocks));
 	event.events = EPOLLIN;
 
 	for (int i = 0; i < LEN(blocks); i++) {
+		// Append each block's pipe to `epollFD`
 		pipe(pipes[i]);
 		event.data.u32 = i;
 		epoll_ctl(epollFD, EPOLL_CTL_ADD, pipes[i][0], &event);
-	}
 
-	pipe(timerPipe);
-	event.data.u32 = LEN(blocks);
-	epoll_ctl(epollFD, EPOLL_CTL_ADD, timerPipe[0], &event);
+		// Calculate the max interval and tick size for the timer
+		if (blocks[i].interval) {
+			maxInterval = MAX(blocks[i].interval, maxInterval);
+			timerTick = gcd(blocks[i].interval, timerTick);
+		}
+	}
 
 	setupSignals();
 }
@@ -304,17 +284,12 @@ int main(const int argc, const char* argv[]) {
 			writeStatus = debug;
 
 	init();
-
-	// Ensure that `timerLoop()` only runs in the fork
-	if (fork() == 0)
-		timerLoop();
-	else
-		statusLoop();
+	statusLoop();
 
 	close(epollFD);
 	close(signalFD);
-	closePipe(timerPipe);
 	for (int i = 0; i < LEN(pipes); i++)
 		closePipe(pipes[i]);
+
 	return 0;
 }

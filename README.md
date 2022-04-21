@@ -125,22 +125,8 @@ To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your `config
 
 Apart from that, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
 
-Because `dwmblocks-async` creates a child process, it messes up the way the original `statuscmd` patch gets the PID of statusbar. It is necessary to modify the following lines in the definition of `getstatusbarpid()`.
+> Earlier, `dwmblocks-async` used to require a patch to be applied to `dwm`. However, the code has been redone so there's no need to apply that patch anymore. 
 
-```diff
-				return statuspid;
-		}
-	}
--	if (!(fp = popen("pidof -s "STATUSBAR, "r")))
-+	if (!(fp = popen("pgrep -o "STATUSBAR, "r")))
-		return -1;
-	fgets(buf, sizeof(buf), fp);
-	pclose(fp);
-```
-
-This modification is backwards-compatible with other versions of `dwmblocks` as well.
-
-Please note that if you are using [`dwm-flexipatch`](https://github.com/bakkeby/dwm-flexipatch), then you only need to enable the `statuscmd` patch through `patches.h`. There is no need to edit change the definition of `getstatusbarpid()` as the changes have already been applied there through [dwm-flexipatch#190](https://github.com/bakkeby/dwm-flexipatch/pull/190).
 
 ## Credits
 This work would not have been possible without [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and [Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
