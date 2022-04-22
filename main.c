@@ -239,7 +239,7 @@ void setupSignals() {
 
 void statusLoop() {
 	// Update all blocks initially
-	kill(0, SIGALRM);
+	raise(SIGALRM);
 
 	struct epoll_event events[LEN(blocks) + 1];
 	while (statusContinue) {
