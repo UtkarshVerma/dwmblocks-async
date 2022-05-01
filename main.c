@@ -115,10 +115,15 @@ void updateBlock(int i) {
 
 	// Trim UTF-8 string to desired length
 	int count = 0, j = 0;
-	while (buffer[j] != '\n' && count <= CMDLENGTH) {
-		// Increment count for non-continuation bytes
-		if ((buffer[j++] & 0xc0) != 0x80)
-			count++;
+	while (buffer[j] != '\n' && count < CMDLENGTH) {
+		count++;
+
+		// Skip continuation bytes, if any.
+		char ch = buffer[j];
+		int skip = 1;
+		while ((ch & 0xc0) > 0x80)
+			ch <<= 1, skip++;
+		j += skip;
 	}
 
 	// Cache last character and replace it with a trailing space
@@ -126,7 +131,8 @@ void updateBlock(int i) {
 	buffer[j] = ' ';
 
 	// Trim trailing spaces
-	while (j >= 0 && buffer[j] == ' ') j--;
+	while (j >= 0 && buffer[j] == ' ')
+		j--;
 	buffer[j + 1] = 0;
 
 	// Clear the pipe
