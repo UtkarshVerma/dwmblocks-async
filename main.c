@@ -163,18 +163,23 @@ void debug() {
 	write(STDOUT_FILENO, "\n", 1);
 }
 
+int setupX() {
+	dpy = XOpenDisplay(NULL);
+	if (!dpy)
+		return 1;
+
+	screen = DefaultScreen(dpy);
+	root = RootWindow(dpy, screen);
+	return 0;
+}
+
 void setRoot() {
 	// Only set root if text has changed
 	if (!getStatus(statusBar[0], statusBar[1]))
 		return;
 
-	Display* d = XOpenDisplay(NULL);
-	if (d)
-		dpy = d;
-	screen = DefaultScreen(dpy);
-	root = RootWindow(dpy, screen);
 	XStoreName(dpy, root, statusBar[0]);
-	XCloseDisplay(dpy);
+	XFlush(dpy);
 }
 
 void signalHandler() {
@@ -284,6 +289,11 @@ void init() {
 }
 
 int main(const int argc, const char* argv[]) {
+	if (setupX()) {
+		fprintf(stderr, "dwmblocks: Failed to open display\n");
+		return 1;
+	}
+
 	writeStatus = setRoot;
 	for (int i = 0; i < argc; i++)
 		if (!strcmp("-d", argv[i]))
@@ -292,6 +302,7 @@ int main(const int argc, const char* argv[]) {
 	init();
 	statusLoop();
 
+	XCloseDisplay(dpy);
 	close(epollFD);
 	close(signalFD);
 	for (int i = 0; i < LEN(pipes); i++)
