@@ -125,8 +125,6 @@ To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your `config
 
 Apart from that, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
 
-> Earlier, `dwmblocks-async` used to require a patch to be applied to `dwm`. However, the code has been redone so there's no need to apply that patch anymore. 
-
 
 ## Credits
 This work would not have been possible without [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and [Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
