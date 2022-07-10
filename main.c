@@ -81,8 +81,9 @@ void execBlock(int i, const char* button) {
 
 		if (button)
 			setenv("BLOCK_BUTTON", button, 1);
+		setsid();
 		execl("/bin/sh", "sh", "-c", blocks[i].command, (char*)NULL);
-		_exit(1);
+		exit(EXIT_SUCCESS);
 	}
 }
 
