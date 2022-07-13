@@ -81,9 +81,8 @@ void execBlock(int i, const char* button) {
 
 		if (button)
 			setenv("BLOCK_BUTTON", button, 1);
-		setsid();
 		execl("/bin/sh", "sh", "-c", blocks[i].command, (char*)NULL);
-		exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -119,7 +118,7 @@ void updateBlock(int i) {
 	while (buffer[j] != '\n' && count < CMDLENGTH) {
 		count++;
 
-		// Skip continuation bytes, if any.
+		// Skip continuation bytes, if any
 		char ch = buffer[j];
 		int skip = 1;
 		while ((ch & 0xc0) > 0x80)
