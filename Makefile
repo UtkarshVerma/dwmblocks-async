@@ -15,5 +15,12 @@ install: dwmblocks
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dwmblocks
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/dwmblocks
+dist: clean
+	mkdir -p dwmblocks
+	cp -R LICENSE Makefile README.md preview.png\
+		config.h main.c dwmblocks
+	tar -cf dwmblocks.tar dwmblocks
+	gzip dwmblocks.tar
+	rm -rf dwmblocks
 
 .PHONY: clean install uninstall
