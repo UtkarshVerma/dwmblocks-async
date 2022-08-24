@@ -1,19 +1,21 @@
 .POSIX:
 
 PREFIX = /usr/local
-CC = gcc
+CFLAGS = -Ofast
+LDLIBS = -lX11
 
-dwmblocks: main.o
-	$(CC) main.o -lX11 -Ofast -o dwmblocks
-main.o: main.c config.h
-	$(CC) -Ofast -c main.c
+BIN = dwmblocks
+
+$(BIN): main.o
+	$(CC) $^ -o $@ $(LDLIBS)
+
 clean:
-	rm -f *.o *.gch dwmblocks
-install: dwmblocks
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f dwmblocks $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/dwmblocks
+	$(RM) *.o $(BIN)
+
+install: $(BIN)
+	install -D -m 755 $(BIN) $(DESTDIR)$(PREFIX)/bin/$(BIN)
+
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/dwmblocks
+	$(RM) $(DESTDIR)$(PREFIX)/bin/$(BIN)
 
 .PHONY: clean install uninstall
