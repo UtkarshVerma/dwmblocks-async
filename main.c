@@ -201,7 +201,8 @@ void signalHandler() {
 
     for (int j = 0; j < LEN(blocks); j++) {
         if (blocks[j].signal == signal - SIGRTMIN) {
-            char button[] = {'0' + info.ssi_int & 0xff, 0};
+            char button[4];  // value can't be more than 255;
+            sprintf(button, "%d", info.ssi_int & 0xff);
             execBlock(j, button);
             break;
         }
