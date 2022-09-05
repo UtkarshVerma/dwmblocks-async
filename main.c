@@ -11,14 +11,7 @@
 
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
-#define BLOCK(cmd, interval, signal) \
-    { "echo \"$(" cmd ")\"", interval, signal }
 
-typedef const struct {
-    const char *command;
-    const unsigned int interval;
-    const unsigned int signal;
-} Block;
 #include "config.h"
 
 #ifdef CLICKABLE_BLOCKS

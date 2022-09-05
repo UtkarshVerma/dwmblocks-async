@@ -2,6 +2,15 @@
 #define DELIMITER "  "
 #define CLICKABLE_BLOCKS
 
+#define BLOCK(cmd, interval, signal) \
+    { "echo \"$(" cmd ")\"", interval, signal }
+
+typedef const struct {
+    const char *command;
+    const unsigned int interval;
+    const unsigned int signal;
+} Block;
+
 const Block blocks[] = {
 	BLOCK("sb-mail",    1800, 17),
 	BLOCK("sb-music",   0,    18),

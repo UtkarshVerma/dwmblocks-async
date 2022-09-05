@@ -6,7 +6,7 @@ LDLIBS = -lX11
 
 BIN = dwmblocks
 
-$(BIN): main.o
+$(BIN): main.o config.h
 	$(CC) $^ -o $@ $(LDLIBS)
 
 clean:
