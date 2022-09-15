@@ -8,6 +8,7 @@
 #include <sys/signalfd.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
@@ -112,16 +113,28 @@ int getStatus(char *new, char *old) {
     return strcmp(new, old);
 }
 
+ssize_t
+read_pipe(int fd, char *buffer, size_t size)
+{
+    ssize_t total = 0, r;
+    while ((r = read(fd, buffer + total, size - total)) > 0)
+        total += r;
+
+    return total;
+}
+
 void updateBlock(int i) {
     char *output = outputs[i];
     char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
-    int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
+    int bytesRead = read_pipe(pipes[i][0], buffer, LEN(buffer));
 
     close(pipes[i][0]);
 
+    if (bytesRead == 0) return;
+
     // Trim UTF-8 string to desired length
     int count = 0, j = 0;
-    while (buffer[j] != '\n' && count < CMDLENGTH) {
+    while (j < bytesRead && count < CMDLENGTH) {
         count++;
 
         // Skip continuation bytes, if any
@@ -131,11 +144,8 @@ void updateBlock(int i) {
         j += skip;
     }
 
-    // Replace last character with a trailing space
-    buffer[j] = ' ';
-
     // Trim trailing spaces
-    while (j >= 0 && buffer[j] == ' ') j--;
+    while (j --> 0 && isspace(buffer[j]));
     buffer[j + 1] = 0;
 
 #if CLICKABLE_BLOCKS
