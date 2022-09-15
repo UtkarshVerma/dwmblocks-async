@@ -130,7 +130,10 @@ void updateBlock(int i) {
 
     close(pipes[i][0]);
 
-    if (bytesRead == 0) return;
+    if (bytesRead == 0) {
+        execLock &= ~(1 << i);
+        return;
+    }
 
     // Trim UTF-8 string to desired length
     int count = 0, j = 0;
