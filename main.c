@@ -12,7 +12,7 @@
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
 #define BLOCK(cmd, interval, signal) \
-    { "echo \"$(" cmd ")\"", interval, signal }
+    { cmd, interval, signal }
 
 typedef const struct {
     const char *command;
@@ -65,16 +65,14 @@ int gcd(int a, int b) {
     return a;
 }
 
-void closePipe(int *pipe) {
-    close(pipe[0]);
-    close(pipe[1]);
-}
-
 void execBlock(int i, const char *button) {
     // Ensure only one child process exists per block at an instance
     if (execLock & 1 << i) return;
     // Lock execution of block until current instance finishes execution
     execLock |= 1 << i;
+
+    // Append the block's pipe to `epollFD`
+    pipe(pipes[i]);
 
     if (fork() == 0) {
         close(pipes[i][0]);
@@ -84,6 +82,10 @@ void execBlock(int i, const char *button) {
         if (button) setenv("BLOCK_BUTTON", button, 1);
         execl("/bin/sh", "sh", "-c", blocks[i].command, (char *)NULL);
         exit(EXIT_FAILURE);
+    } else {
+        close(pipes[i][1]);
+        event.data.u32 = i;
+        epoll_ctl(epollFD, EPOLL_CTL_ADD, pipes[i][0], &event);
     }
 }
 
@@ -115,6 +117,8 @@ void updateBlock(int i) {
     char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
     int bytesRead = read(pipes[i][0], buffer, LEN(buffer));
 
+    close(pipes[i][0]);
+
     // Trim UTF-8 string to desired length
     int count = 0, j = 0;
     while (buffer[j] != '\n' && count < CMDLENGTH) {
@@ -127,19 +131,12 @@ void updateBlock(int i) {
         j += skip;
     }
 
-    // Cache last character and replace it with a trailing space
-    char ch = buffer[j];
+    // Replace last character with a trailing space
     buffer[j] = ' ';
 
     // Trim trailing spaces
     while (j >= 0 && buffer[j] == ' ') j--;
     buffer[j + 1] = 0;
-
-    // Clear the pipe
-    if (bytesRead == LEN(buffer)) {
-        while (ch != '\n' && read(pipes[i][0], &ch, 1) == 1)
-            ;
-    }
 
 #if CLICKABLE_BLOCKS
     if (bytesRead > 1 && blocks[i].signal > 0) {
@@ -252,9 +249,10 @@ void statusLoop() {
         int eventCount = epoll_wait(epollFD, events, LEN(events), -1);
         for (int i = 0; i < eventCount; i++) {
             unsigned short id = events[i].data.u32;
-            if (id < LEN(blocks))
+            if (id < LEN(blocks)) {
+                epoll_ctl(epollFD, EPOLL_CTL_DEL, pipes[i][0], &event /* unused */);
                 updateBlock(id);
-            else
+            } else
                 signalHandler();
         }
 
@@ -267,11 +265,6 @@ void init() {
     event.events = EPOLLIN;
 
     for (int i = 0; i < LEN(blocks); i++) {
-        // Append each block's pipe to `epollFD`
-        pipe(pipes[i]);
-        event.data.u32 = i;
-        epoll_ctl(epollFD, EPOLL_CTL_ADD, pipes[i][0], &event);
-
         // Calculate the max interval and tick size for the timer
         if (blocks[i].interval) {
             maxInterval = MAX(blocks[i].interval, maxInterval);
@@ -298,7 +291,6 @@ int main(const int argc, const char *argv[]) {
     XCloseDisplay(dpy);
     close(epollFD);
     close(signalFD);
-    for (int i = 0; i < LEN(pipes); i++) closePipe(pipes[i]);
 
     return 0;
 }
