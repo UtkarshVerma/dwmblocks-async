@@ -72,7 +72,7 @@ void execBlock(int i, const char *button) {
     // Lock execution of block until current instance finishes execution
     execLock |= 1 << i;
 
-    // Append the block's pipe to `epollFD`
+    // Open a new pipe for every new block command
     pipe(pipes[i]);
 
     if (fork() == 0) {
