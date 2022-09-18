@@ -122,15 +122,19 @@ read_pipe(int fd, char *buffer, size_t size)
     while ((r = read(fd, buffer + total, size - total)) > 0)
         total += r;
 
-    return total;
+    return r ?: total;
 }
 
 void updateBlock(int i) {
     char *output = outputs[i];
     char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
-    int bytesRead = read_pipe(pipes[i][0], buffer, LEN(buffer));
 
+    if (pipes[i][0] < 0)
+        return;
+
+    int bytesRead = read_pipe(pipes[i][0], buffer, LEN(buffer));
     close(pipes[i][0]);
+    pipes[i][0] = -1;
 
     // Trim UTF-8 string to desired length
     int count = 0, j = 0;
