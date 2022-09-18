@@ -8,6 +8,7 @@
 #include <sys/signalfd.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <ctype.h>
 
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -73,12 +74,13 @@ void execBlock(int i, const char *button) {
     execLock |= 1 << i;
 
     // Open a new pipe for every new block command
-    pipe(pipes[i]);
+    pipe2(pipes[i], O_CLOEXEC);
 
     if (fork() == 0) {
-        close(pipes[i][0]);
-        dup2(pipes[i][1], STDOUT_FILENO);
-        close(pipes[i][1]);
+	if (pipes[i][1] == STDOUT_FILENO)
+		fcntl(pipes[i][1], F_SETFD, fcntl(pipes[i][1], F_GETFD) ^ O_CLOEXEC);
+	else
+		dup2(pipes[i][1], STDOUT_FILENO);
 
         if (button) setenv("BLOCK_BUTTON", button, 1);
         execl("/bin/sh", "sh", "-c", blocks[i].command, (char *)NULL);
