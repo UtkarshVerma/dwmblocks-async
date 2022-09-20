@@ -129,7 +129,7 @@ void updateBlock(int i) {
     char *output = outputs[i];
     char buffer[LEN(outputs[0]) - CLICKABLE_BLOCKS];
 
-    if (execLock & 1 << i) return;
+    if (!(execLock & 1 << i)) return;
 
     int bytesRead = read_pipe(pipes[i][0], buffer, LEN(buffer));
     close(pipes[i][0]);
