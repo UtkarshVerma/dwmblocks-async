@@ -36,7 +36,6 @@ typedef const struct {
 #endif
 
 static Display *dpy;
-static int screen;
 static Window root;
 static unsigned short statusContinue = 1;
 static struct epoll_event event;
@@ -166,8 +165,7 @@ int setupX() {
     dpy = XOpenDisplay(NULL);
     if (!dpy) return 1;
 
-    screen = DefaultScreen(dpy);
-    root = RootWindow(dpy, screen);
+    root = DefaultRootWindow(dpy);
     return 0;
 }
 
