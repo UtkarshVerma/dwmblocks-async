@@ -100,6 +100,9 @@ Apart from that you can also modify the following parameters to suit your needs.
 // Enable clickability for blocks. Needs `dwm` to be patched appropriately.
 // See the "Clickable blocks" section below.
 #define CLICKABLE_BLOCKS
+
+// ...
+#define SCRIPTS_DIR "/opt/dwmblocks-async/statusbar/"
 ```
 
 ### Signalling changes

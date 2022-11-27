@@ -12,7 +12,7 @@
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define MAX(a, b) (a > b ? a : b)
 #define BLOCK(cmd, interval, signal) \
-    { "echo \"$(" cmd ")\"", interval, signal }
+    { cmd, interval, signal }
 
 typedef const struct {
     const char *command;
@@ -69,6 +69,25 @@ void closePipe(int *pipe) {
     close(pipe[1]);
 }
 
+char* concat_paths(const char* path1, const char* path2) {
+    const char *sep = "/";
+    size_t path1_len = strlen(path1);
+
+    char* full_path = NULL;
+
+    if (strcmp(&path1[path1_len-1], sep)) {
+        full_path = malloc(path1_len + strlen(path2) + 1);
+        strcpy(full_path, path1);
+        strcat(full_path, sep);
+        strcat(full_path, path2);
+   } else {
+        full_path = malloc(path1_len + strlen(path2));
+        strcpy(full_path, path1);
+        strcat(full_path, path2);
+   }
+   return full_path;
+}
+
 void execBlock(int i, const char *button) {
     // Ensure only one child process exists per block at an instance
     if (execLock & 1 << i) return;
@@ -81,7 +100,13 @@ void execBlock(int i, const char *button) {
         close(pipes[i][1]);
 
         if (button) setenv("BLOCK_BUTTON", button, 1);
-        execl("/bin/sh", "sh", "-c", blocks[i].command, (char *)NULL);
+
+        #ifdef SCRIPTS_DIR
+        char *command_path = concat_paths(SCRIPTS_DIR, blocks[i].command);
+        execlp(command_path, (char*)NULL);
+        #else
+        execlp(blocks[i].command, (char*)NULL);
+        #endif
         exit(EXIT_FAILURE);
     }
 }

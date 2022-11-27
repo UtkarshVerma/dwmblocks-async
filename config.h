@@ -2,6 +2,8 @@
 #define DELIMITER "  "
 #define CLICKABLE_BLOCKS
 
+#define SCRIPTS_DIR "/opt/dwmblocks-async/statusbar/"
+
 const Block blocks[] = {
 	BLOCK("sb-mail",    1800, 17),
 	BLOCK("sb-music",   0,    18),
