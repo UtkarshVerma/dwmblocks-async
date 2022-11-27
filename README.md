@@ -101,7 +101,7 @@ Apart from that you can also modify the following parameters to suit your needs.
 // See the "Clickable blocks" section below.
 #define CLICKABLE_BLOCKS
 
-// ...
+// Optional: path to scripts directory.
 #define SCRIPTS_DIR "/opt/dwmblocks-async/statusbar/"
 ```
 
