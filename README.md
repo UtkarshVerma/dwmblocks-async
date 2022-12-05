@@ -35,8 +35,6 @@ Both are executed at the same rate, which is wasteful. Ideally, the mail counter
 
 `dwmblocks` allows you to break up the statusbar into multiple blocks, each having their own update interval. The commands in a particular block are only executed once in that interval, solving our previous problem.
 
-> Additionally, you can externally trigger any specific block.
-
 ## Why `dwmblocks-async`?
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla `dwmblocks` executes the commands of each block sequentially, it leads to annoying freezes. In cases where one block takes several seconds to execute, like in the mail and date blocks example from above, the delay is clearly visible. Fire up a new instance of `dwmblocks` and you'll see!
 
