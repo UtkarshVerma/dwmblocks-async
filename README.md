@@ -16,7 +16,6 @@ An async, modular statusbar for `dwm`. You may think of it as `i3blocks`, but fo
 
 ## Why `dwmblocks`?
 In `dwm`, you have to set the statusbar through an infinite loop like this:
-
 ```sh
 while :; do
     xsetroot -name "$(date)"
@@ -24,32 +23,27 @@ while :; do
 done
 ```
 
-It may not look bad, but it's certainly inefficient when running multiple commands that need to be updated at different frequencies:
-
+This is inefficient when running multiple commands that need to be updated at different frequencies. For example, displaying an unread mail count and a clock in the statusbar:
 ```sh
-# Displaying an unread mail count in the status bar
 while :; do
     xsetroot -name "$(mailCount) $(date)"
     sleep 60
 done
 ```
 
-For example, displaying an unread mail count and a clock in my statusbar will cause both to be updated at the same rate. This is wasteful. Ideally, the mail counter would be updated every thirty minutes, since there's a limit to the number of requests I can make using Gmail's APIs, being a free user.  
+Both are executed at the same rate, which is wasteful. Ideally, the mail counter would be updated every thirty minutes, since there's a limit to the number of requests I can make using Gmail's APIs (as a free user).  
 
 `dwmblocks` allows you to break up the statusbar into multiple blocks, each having their own update interval. The commands in a particular block are only executed once in that interval, solving our previous problem.
 
 > Additionally, you can externally trigger any specific block.
 
-
 ## Why `dwmblocks-async`?
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla `dwmblocks` executes the commands of each block sequentially, it leads to annoying freezes. In cases where one block takes several seconds to execute, like in the mail and date blocks example from above, the delay is clearly visible. Fire up a new instance of `dwmblocks` and you'll see!
 
-With `async`, we tell the computer to execute each block asynchronously (simultaneously).
-
+With `async`, the computer executes each block asynchronously (simultaneously).
 
 ## Installation
 Clone this repository, modify `config.h` appropriately, then compile the program:
-
 ```sh
 git clone https://github.com/UtkarshVerma/dwmblocks-async.git
 cd dwmblocks-async
@@ -57,9 +51,8 @@ vi config.h
 sudo make install
 ```
 
-
 ## Usage
-To set `dwmblocks-async` as your statusbar, you need to run it as a background process on startup. One way is by adding the following to `~/.xinitrc`:
+To set `dwmblocks-async` as your statusbar, you need to run it as a background process on startup. One way is to add the following to `~/.xinitrc`:
 
 ```sh
 # Binary of `dwmblocks-async` is named `dwmblocks`
@@ -67,16 +60,7 @@ dwmblocks &
 ```
 
 ### Modifying the blocks
-You can define your statusbar blocks in `config.h`. Each block has the following properties:
-
-Property|Value
--|-
-Command | The command you wish to execute in your block
-Update interval | Time in seconds, after which you want the block to update. If `0`, the block will never be updated.
-Update signal | Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable.
-
-The syntax for defining a block is:
-
+You can define your statusbar blocks in `config.h`: 
 ```c
 const Block blocks[] = {
     ...
@@ -85,6 +69,14 @@ const Block blocks[] = {
     ...
 }
 ```
+
+Each block has the following properties:
+
+Property|Description
+-|-
+Command | The command you wish to execute in your block
+Update interval | Time in seconds, after which you want the block to update. If `0`, the block will never be updated.
+Update signal | Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable.
 
 Additional parameters can be modified:
 
@@ -98,8 +90,7 @@ Additional parameters can be modified:
 // Adds a leading delimiter to the statusbar, useful for powerline.
 #define LEADING_DELIMITER
 
-// Enable clickability for blocks. Needs `dwm` to be patched appropriately.
-// See the "Clickable blocks" section below.
+// Enable clickability for blocks. See the "Clickable blocks" section below.
 #define CLICKABLE_BLOCKS
 ```
 
@@ -110,12 +101,12 @@ For example, the volume block has the update signal 5 by default:
 
 Command|Effect
 -|-
-`pkill -RTMIN+5 dwmblocks`|Update block|
-`kill -39 $(pidof dwmblocks)`|Same, but faster. Just add 34 to your typical signal number|
-`pkill -SIGUSR1 dwmblocks`|Refresh all blocks|
-`kill -10 $(pidof dwmblocks)`|Same, but faster|
+`pkill -RTMIN+5 dwmblocks`|Update block
+`kill -39 $(pidof dwmblocks)`|Update, but faster. Add 34 to your signal number!
+`pkill -SIGUSR1 dwmblocks`|Refresh all blocks
+`kill -10 $(pidof dwmblocks)`|Refresh, but faster
 
-My volume block *never* updates on its own. Instead, I use this command alongside my volume shortcuts in `dwm` to only update it when relevant.
+My volume block *never* updates on its own. Instead, I use the 2nd command alongside my volume shortcuts in `dwm` to only update it when relevant.
 
 > All blocks must have different signal numbers!
 
