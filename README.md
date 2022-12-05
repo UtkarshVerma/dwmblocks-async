@@ -97,16 +97,9 @@ Additional parameters can be modified:
 ### Signalling changes
 Most statusbars constantly rerun all scripts every few seconds. This is an option here, but a superior choice is to give your block a signal through which you can indicate it to update on relevant event, rather than have it rerun idly.
 
-For example, the volume block has the update signal 5 by default:
+For example, the volume block has the update signal `5` by default. I run `kill -39 $(pidof dwmblocks)` alongside my volume shortcuts in `dwm` to only update it when relevant. Just add `34` to your signal number! You could also run `pkill -RTMIN+5 dwmblocks`, but it's slower.
 
-Command|Effect
--|-
-`pkill -RTMIN+5 dwmblocks`|Update block
-`kill -39 $(pidof dwmblocks)`|Update, but faster. Add 34 to your signal number!
-`pkill -SIGUSR1 dwmblocks`|Refresh all blocks
-`kill -10 $(pidof dwmblocks)`|Refresh, but faster
-
-My volume block *never* updates on its own. Instead, I use the 2nd command alongside my volume shortcuts in `dwm` to only update it when relevant.
+To refresh all the blocks, run `kill -10 $(pidof dwmblocks)` or `pkill -SIGUSR1 dwmblocks`.
 
 > All blocks must have different signal numbers!
 
