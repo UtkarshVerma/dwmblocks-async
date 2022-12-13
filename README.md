@@ -41,7 +41,7 @@ Both are executed at the same rate, which is wasteful. Ideally, the mail counter
 ## Why `dwmblocks-async`?
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla `dwmblocks` executes the commands of each block sequentially, it leads to annoying freezes. In cases where one block takes several seconds to execute, like in the mail and date blocks example from above, the delay is clearly visible. Fire up a new instance of `dwmblocks` and you'll see!
 
-With `async`, the computer executes each block asynchronously (simultaneously).
+With `dwmblocks-async`, the computer executes each block asynchronously (simultaneously).
 
 ## Installation
 Clone this repository, modify `config.h` appropriately, then compile the program:
@@ -57,7 +57,7 @@ sudo make install
 To set `dwmblocks-async` as your statusbar, you need to run it as a background process on startup. One way is to add the following to `~/.xinitrc`:
 
 ```sh
-# Binary of `dwmblocks-async` is named `dwmblocks`
+# The binary of `dwmblocks-async` is named `dwmblocks`
 dwmblocks &
 ```
 
