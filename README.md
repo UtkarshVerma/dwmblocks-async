@@ -1,21 +1,23 @@
 # dwmblocks-async
-An async, modular statusbar for `dwm`. You may think of it as `i3blocks`, but for `dwm`.
+A [`dwm`](https://dwm.suckless.org) statusbar that has a modular, async design, ensuring it will always remain responsive, no matter how many blocks you have configured. Imagine `i3blocks`, but for `dwm`.
 
 ![A lean config of dwmblocks-async.](preview.png)
 
 ## Features
-- Modular
+- [Modular](#modifying-the-blocks)
 - Lightweight
-- Suckless
-- Blocks are clickable
-- Blocks are loaded asynchronously
-- Each block can be externally triggered to update itself
+- [Suckless](https://suckless.org/philosophy)
+- Blocks
+    - [Clickable](#clickable-blocks)
+    - Async loaded
+    - [Can be externally triggered to update](#signalling-changes)
 - Compatible with `i3blocks` scripts
 
 > Additionally, this build of `dwmblocks` is more optimized and fixes the flickering of the statusbar when scrolling.
 
 ## Why `dwmblocks`?
-In `dwm`, you have to set the statusbar through an infinite loop like this:
+In `dwm`, you have to set the statusbar through an infinite loop, like so:
+
 ```sh
 while :; do
     xsetroot -name "$(date)"
@@ -23,7 +25,8 @@ while :; do
 done
 ```
 
-This is inefficient when running multiple commands that need to be updated at different frequencies. For example, displaying an unread mail count and a clock in the statusbar:
+This is inefficient when running multiple commands that need to be updated at different frequencies. For example, to display an unread mail count and a clock in the statusbar:
+
 ```sh
 while :; do
     xsetroot -name "$(mailCount) $(date)"
@@ -33,7 +36,7 @@ done
 
 Both are executed at the same rate, which is wasteful. Ideally, the mail counter would be updated every thirty minutes, since there's a limit to the number of requests I can make using Gmail's APIs (as a free user).  
 
-`dwmblocks` allows you to break up the statusbar into multiple blocks, each having their own update interval. The commands in a particular block are only executed once in that interval, solving our previous problem.
+`dwmblocks` devides the statusbar into multiple blocks, each of which can be updated at its own interval. The commands in a given block are only executed once within that interval, effectively addressing the previous issue.
 
 ## Why `dwmblocks-async`?
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla `dwmblocks` executes the commands of each block sequentially, it leads to annoying freezes. In cases where one block takes several seconds to execute, like in the mail and date blocks example from above, the delay is clearly visible. Fire up a new instance of `dwmblocks` and you'll see!
@@ -42,6 +45,7 @@ With `async`, the computer executes each block asynchronously (simultaneously).
 
 ## Installation
 Clone this repository, modify `config.h` appropriately, then compile the program:
+
 ```sh
 git clone https://github.com/UtkarshVerma/dwmblocks-async.git
 cd dwmblocks-async
@@ -58,7 +62,8 @@ dwmblocks &
 ```
 
 ### Modifying the blocks
-You can define your statusbar blocks in `config.h`: 
+You can define your statusbar blocks in `config.h`:
+
 ```c
 const Block blocks[] = {
     ...
@@ -72,7 +77,7 @@ Each block has the following properties:
 
 Property|Description
 -|-
-Command | The command you wish to execute in your block
+Command | The command you wish to execute in your block.
 Update interval | Time in seconds, after which you want the block to update. If `0`, the block will never be updated.
 Update signal | Signal to be used for triggering the block. Must be a positive integer. If `0`, a signal won't be set up for the block and it will be unclickable.
 
@@ -111,7 +116,6 @@ To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your `config
 ```
 
 Apart from that, you need `dwm` to be patched with [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
-
 
 ## Credits
 This work would not have been possible without [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and [Daniel Bylinka's statuscmd patch](https://dwm.suckless.org/patches/statuscmd/).
