@@ -1,5 +1,5 @@
 # dwmblocks-async
-A [`dwm`](https://dwm.suckless.org) statusbar that has a modular, async design, ensuring it will always remain responsive, no matter how many blocks you have configured. Imagine `i3blocks`, but for `dwm`.
+A [`dwm`](https://dwm.suckless.org) status bar that has a modular, async design, so it is always responsive. Imagine `i3blocks`, but for `dwm`.
 
 ![A lean config of dwmblocks-async.](preview.png)
 
@@ -7,16 +7,16 @@ A [`dwm`](https://dwm.suckless.org) statusbar that has a modular, async design, 
 - [Modular](#modifying-the-blocks)
 - Lightweight
 - [Suckless](https://suckless.org/philosophy)
-- Blocks
+- Blocks:
     - [Clickable](#clickable-blocks)
-    - Async loaded
-    - [Can be externally triggered to update](#signalling-changes)
+    - Loaded asynchronously
+    - [Updates can be externally triggered](#signalling-changes)
 - Compatible with `i3blocks` scripts
 
-> Additionally, this build of `dwmblocks` is more optimized and fixes the flickering of the statusbar when scrolling.
+> Additionally, this build of `dwmblocks` is more optimized and fixes the flickering of the status bar when scrolling.
 
 ## Why `dwmblocks`?
-In `dwm`, you have to set the statusbar through an infinite loop, like so:
+In `dwm`, you have to set the status bar through an infinite loop, like so:
 
 ```sh
 while :; do
@@ -25,7 +25,7 @@ while :; do
 done
 ```
 
-This is inefficient when running multiple commands that need to be updated at different frequencies. For example, to display an unread mail count and a clock in the statusbar:
+This is inefficient when running multiple commands that need to be updated at different frequencies. For example, to display an unread mail count and a clock in the status bar:
 
 ```sh
 while :; do
@@ -36,7 +36,7 @@ done
 
 Both are executed at the same rate, which is wasteful. Ideally, the mail counter would be updated every thirty minutes, since there's a limit to the number of requests I can make using Gmail's APIs (as a free user).  
 
-`dwmblocks` devides the statusbar into multiple blocks, each of which can be updated at its own interval. The commands in a given block are only executed once within that interval, effectively addressing the previous issue.
+`dwmblocks` allows you to divide the status bar into multiple blocks, each of which can be updated at its own interval. This effectively addresses the previous issue, because the commands in a block are only executed once within that time frame.
 
 ## Why `dwmblocks-async`?
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla `dwmblocks` executes the commands of each block sequentially, it leads to annoying freezes. In cases where one block takes several seconds to execute, like in the mail and date blocks example from above, the delay is clearly visible. Fire up a new instance of `dwmblocks` and you'll see!
@@ -54,7 +54,7 @@ sudo make install
 ```
 
 ## Usage
-To set `dwmblocks-async` as your statusbar, you need to run it as a background process on startup. One way is to add the following to `~/.xinitrc`:
+To set `dwmblocks-async` as your status bar, you need to run it as a background process on startup. One way is to add the following to `~/.xinitrc`:
 
 ```sh
 # The binary of `dwmblocks-async` is named `dwmblocks`
@@ -62,7 +62,7 @@ dwmblocks &
 ```
 
 ### Modifying the blocks
-You can define your statusbar blocks in `config.h`:
+You can define your status bar blocks in `config.h`:
 
 ```c
 const Block blocks[] = {
@@ -87,10 +87,10 @@ Additional parameters can be modified:
 // Maximum possible length of output from block, expressed in number of characters.
 #define CMDLENGTH 50
 
-// The statusbar's delimiter that appears in between each block.
+// The status bar's delimiter that appears in between each block.
 #define DELIMITER " "
 
-// Adds a leading delimiter to the statusbar, useful for powerline.
+// Adds a leading delimiter to the status bar, useful for powerline.
 #define LEADING_DELIMITER
 
 // Enable clickability for blocks. See the "Clickable blocks" section below.
@@ -98,7 +98,7 @@ Additional parameters can be modified:
 ```
 
 ### Signalling changes
-Most statusbars constantly rerun all scripts every few seconds. This is an option here, but a superior choice is to give your block a signal through which you can indicate it to update on relevant event, rather than have it rerun idly.
+Most status bars constantly rerun all scripts every few seconds. This is an option here, but a superior choice is to give your block a signal through which you can indicate it to update on relevant event, rather than have it rerun idly.
 
 For example, the volume block has the update signal `5` by default. I run `kill -39 $(pidof dwmblocks)` alongside my volume shortcuts in `dwm` to only update it when relevant. Just add `34` to your signal number! You could also run `pkill -RTMIN+5 dwmblocks`, but it's slower.
 
@@ -107,7 +107,7 @@ To refresh all the blocks, run `kill -10 $(pidof dwmblocks)` or `pkill -SIGUSR1 
 > All blocks must have different signal numbers!
 
 ### Clickable blocks
-Like `i3blocks`, this build allows you to build in additional actions into your scripts in response to click events. You can check out [my statusbar scripts](https://github.com/UtkarshVerma/dotfiles/tree/main/.local/bin/statusbar) as references for using the `$BLOCK_BUTTON` variable.
+Like `i3blocks`, this build allows you to build in additional actions into your scripts in response to click events. You can check out [my status bar scripts](https://github.com/UtkarshVerma/dotfiles/tree/main/.local/bin/statusbar) as references for using the `$BLOCK_BUTTON` variable.
 
 To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your `config.h`:
 
