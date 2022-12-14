@@ -103,9 +103,9 @@ void execBlock(int i, const char *button) {
 
         #ifdef SCRIPTS_DIR
         char *command_path = concat_paths(SCRIPTS_DIR, blocks[i].command);
-        execlp(command_path, (char*)NULL);
+        execlp(command_path, blocks[i].command, (char*)NULL);
         #else
-        execlp(blocks[i].command, (char*)NULL);
+        execlp(blocks[i].command, blocks[i].command, (char*)NULL);
         #endif
         exit(EXIT_FAILURE);
     }
