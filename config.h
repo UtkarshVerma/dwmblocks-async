@@ -1,16 +1,6 @@
-#define CMDLENGTH 45
-#define DELIMITER "  "
-#define CLICKABLE_BLOCKS
+#pragma once
 
-const Block blocks[] = {
-	BLOCK("sb-mail",    1800, 17),
-	BLOCK("sb-music",   0,    18),
-	BLOCK("sb-disk",    1800, 19),
-	BLOCK("sb-memory",  10,   20),
-	BLOCK("sb-loadavg", 5,    21),
-	BLOCK("sb-mic",     0,    26),
-	BLOCK("sb-record",  0,    27),
-	BLOCK("sb-volume",  0,    22),
-	BLOCK("sb-battery", 5,    23),
-	BLOCK("sb-date",    1,    24)
-};
+#define CLICKABLE_BLOCKS 1  // Enable clickability for blocks
+#define CMDLENGTH 45        // Number of characters that each block will output
+#define DELIMITER "  "      // Delimiter string used to separate blocks
+#define LEADING_DELIMITER 0  // Whether a leading separator should be used
