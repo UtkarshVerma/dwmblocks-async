@@ -10,8 +10,8 @@ LDLIBS := -lX11
 
 BIN := dwmblocks
 VPATH := $(SRC_DIR)
-OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(subst .c,.o,$(wildcard $(SRC_DIR)/*.c)))
-OBJS += $(addprefix $(BUILD_DIR)/,$(subst .c,.o,$(wildcard *.c)))
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
+OBJS += $(patsubst %.c,$(BUILD_DIR)/%.o,$(wildcard *.c))
 
 all: $(BUILD_DIR)/$(BIN)
 

@@ -130,7 +130,7 @@ void init() {
 
 int main(const int argc, const char *argv[]) {
     if (setupX()) {
-        fprintf(stderr, "dwmblocks: Failed to open display\n");
+        fprintf(stderr, "%s\n", "dwmblocks: Failed to open display");
         return 1;
     }
 
