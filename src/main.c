@@ -13,7 +13,7 @@
 static unsigned short statusContinue = 1;
 unsigned short debugMode = 0;
 static int epollFD, signalFD;
-static int timerTick = 0, maxInterval = 1;
+static unsigned int timerTick = 0, maxInterval = 1;
 
 void signalHandler() {
     struct signalfd_siginfo info;

@@ -1,36 +1,53 @@
 .POSIX:
 
+BIN := dwmblocks
 BUILD_DIR := build
 SRC_DIR := src
 INC_DIR := inc
 
+VERBOSE := 0
+
 PREFIX := /usr/local
-CFLAGS := -Wall -Ofast -I. -I$(INC_DIR)
+CFLAGS := -Wall -Wextra -Ofast -I. -I$(INC_DIR)
+CFLAGS += -Wall -Wextra -Wno-missing-field-initializers
 LDLIBS := -lX11
 
-BIN := dwmblocks
 VPATH := $(SRC_DIR)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
 OBJS += $(patsubst %.c,$(BUILD_DIR)/%.o,$(wildcard *.c))
 
+INSTALL_DIR := $(subst //,/,$(DESTDIR)/$(PREFIX)/bin)
+
+# Prettify output
+PRINTF := @printf "%-8s %s\n"
+ifeq ($(VERBOSE), 0)
+	Q := @
+endif
+
 all: $(BUILD_DIR)/$(BIN)
 
 $(BUILD_DIR)/$(BIN): $(OBJS)
-	$(LINK.o) $^ $(LDLIBS) -o $@
+	$(PRINTF) "LD" $@
+	$Q$(LINK.o) $^ $(LDLIBS) -o $@
 
 $(BUILD_DIR)/%.o: %.c config.h | $(BUILD_DIR)
-	$(COMPILE.c) -o $@ $<
+	$(PRINTF) "CC" $@
+	$Q$(COMPILE.c) -o $@ $<
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	$(PRINTF) "MKDIR" $@
+	$Qmkdir -p $@
 
 clean:
-	$(RM) -r $(BUILD_DIR)
+	$(PRINTF) "RM" $(BUILD_DIR)
+	$Q$(RM) -r $(BUILD_DIR)
 
 install: $(BUILD_DIR)/$(BIN)
-	install -D -m 755 $< $(DESTDIR)/$(PREFIX)/bin/$(BIN)
+	$(PRINTF) "INSTALL" $(INSTALL_DIR)/$(BIN)
+	$Qinstall -D -m 755 $< $(INSTALL_DIR)/$(BIN)
 
 uninstall:
-	$(RM) $(DESTDIR)/$(PREFIX)/bin/$(BIN)
+	$(PRINTF) "RM" $(INSTALL_DIR)/$(BIN)
+	$Q$(RM) $(INSTALL_DIR)/$(BIN)
 
 .PHONY: all clean install uninstall
