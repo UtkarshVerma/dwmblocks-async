@@ -16,7 +16,7 @@ VPATH := $(SRC_DIR)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
 OBJS += $(patsubst %.c,$(BUILD_DIR)/%.o,$(wildcard *.c))
 
-INSTALL_DIR := $(subst //,/,$(DESTDIR)/$(PREFIX)/bin)
+INSTALL_DIR := $(DESTDIR)$(PREFIX)/bin
 
 # Prettify output
 PRINTF := @printf "%-8s %s\n"
@@ -39,8 +39,8 @@ $(BUILD_DIR):
 	$Qmkdir -p $@
 
 clean:
-	$(PRINTF) "RM" $(BUILD_DIR)
-	$Q$(RM) -r $(BUILD_DIR)
+	$(PRINTF) "CLEAN" $(BUILD_DIR)
+	$Q$(RM) $(BUILD_DIR)/*
 
 install: $(BUILD_DIR)/$(BIN)
 	$(PRINTF) "INSTALL" $(INSTALL_DIR)/$(BIN)

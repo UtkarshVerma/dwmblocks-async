@@ -47,7 +47,9 @@ void signalHandler() {
     }
 }
 
-void termHandler() { statusContinue = 0; }
+void termHandler() {
+    statusContinue = 0;
+}
 
 void setupSignals() {
     sigset_t handledSignals;

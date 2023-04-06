@@ -1,5 +1,7 @@
 #include "util.h"
 
+#include <unistd.h>
+
 int gcd(int a, int b) {
     int temp;
     while (b > 0) {

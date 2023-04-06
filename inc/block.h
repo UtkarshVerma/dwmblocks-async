@@ -1,6 +1,4 @@
 #pragma once
-#define _GNU_SOURCE
-
 #include "config.h"
 
 typedef struct {

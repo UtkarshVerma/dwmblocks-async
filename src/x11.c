@@ -15,7 +15,9 @@ int setupX() {
     return 0;
 }
 
-int closeX() { return XCloseDisplay(display); }
+int closeX() {
+    return XCloseDisplay(display);
+}
 
 void setXRootName(char *str) {
     XStoreName(display, rootWindow, str);
