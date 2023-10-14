@@ -1,11 +1,15 @@
-# dwmblocks-async
+# Mk-dwmblk
+my dwmblocks-async fork
+
+# Old Readme
+## dwmblocks-async
 
 A [`dwm`](https://dwm.suckless.org) status bar that has a modular, async
 design, so it is always responsive. Imagine `i3blocks`, but for `dwm`.
 
 ![A lean config of dwmblocks-async.](preview.png)
 
-## Features
+### Features
 
 - [Modular](#modifying-the-blocks)
 - Lightweight
@@ -19,7 +23,7 @@ design, so it is always responsive. Imagine `i3blocks`, but for `dwm`.
 > Additionally, this build of `dwmblocks` is more optimized and fixes the
 > flickering of the status bar when scrolling.
 
-## Why `dwmblocks`?
+### Why `dwmblocks`?
 
 In `dwm`, you have to set the status bar through an infinite loop, like so:
 
@@ -50,7 +54,7 @@ which can be updated at its own interval. This effectively addresses the
 previous issue, because the commands in a block are only executed once within
 that time frame.
 
-## Why `dwmblocks-async`?
+### Why `dwmblocks-async`?
 
 The magic of `dwmblocks-async` is in the `async` part. Since vanilla
 `dwmblocks` executes the commands of each block sequentially, it leads to
@@ -61,7 +65,7 @@ visible. Fire up a new instance of `dwmblocks` and you'll see!
 With `dwmblocks-async`, the computer executes each block asynchronously
 (simultaneously).
 
-## Installation
+### Installation
 
 Clone this repository, modify `config.h` appropriately, then compile the
 program:
@@ -73,7 +77,7 @@ vi config.h
 sudo make install
 ```
 
-## Usage
+### Usage
 
 To set `dwmblocks-async` as your status bar, you need to run it as a background
 process on startup. One way is to add the following to `~/.xinitrc`:
@@ -83,7 +87,7 @@ process on startup. One way is to add the following to `~/.xinitrc`:
 dwmblocks &
 ```
 
-### Modifying the blocks
+#### Modifying the blocks
 
 You can define your status bar blocks in `config.c`:
 
@@ -120,7 +124,7 @@ Apart from defining the blocks, features can be toggled through `config.h`:
 #define CLICKABLE_BLOCKS 1
 ```
 
-### Signalling changes
+#### Signalling changes
 
 Most status bars constantly rerun all scripts every few seconds. This is an
 option here, but a superior choice is to give your block a signal through which
@@ -137,7 +141,7 @@ To refresh all the blocks, run `kill -10 $(pidof dwmblocks)` or
 
 > All blocks must have different signal numbers!
 
-### Clickable blocks
+#### Clickable blocks
 
 Like `i3blocks`, this build allows you to build in additional actions into your
 scripts in response to click events. You can check out
@@ -154,7 +158,7 @@ To use this feature, define the `CLICKABLE_BLOCKS` feature macro in your
 Apart from that, you need `dwm` to be patched with
 [statuscmd](https://dwm.suckless.org/patches/statuscmd/).
 
-## Credits
+### Credits
 
 This work would not have been possible without
 [Luke's build of dwmblocks](https://github.com/LukeSmithxyz/dwmblocks) and
