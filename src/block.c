@@ -1,72 +1,147 @@
 #include "block.h"
 
-#define _GNU_SOURCE
+#include <bits/stdint-uintn.h>
+#include <bits/types/FILE.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "util.h"
 
-static int execLock = 0;
+int block_init(block *const block) {
+    if (pipe(block->pipe) != 0) {
+        (void)fprintf(stderr,
+                      "error: could not create a pipe for \"%s\" block\n",
+                      block->command);
+        return 1;
+    }
 
-void execBlock(const Block *block, const char *button) {
-    unsigned short i = block - blocks;
+    block->fork_pid = -1;
 
-    // Ensure only one child process exists per block at an instance
-    if (execLock & 1 << i) return;
-    // Lock execution of block until current instance finishes execution
-    execLock |= 1 << i;
+    return 0;
+}
 
-    if (fork() == 0) {
-        close(block->pipe[0]);
-        dup2(block->pipe[1], STDOUT_FILENO);
-        close(block->pipe[1]);
+int block_deinit(block *const block) {
+    int status = close(block->pipe[READ_END]);
+    status |= close(block->pipe[WRITE_END]);
+    if (status != 0) {
+        (void)fprintf(stderr, "error: could not close \"%s\" block's pipe\n",
+                      block->command);
+        return 1;
+    }
 
-        if (button) setenv("BLOCK_BUTTON", button, 1);
+    return 0;
+}
 
-        FILE *file = popen(block->command, "r");
-        if (!file) {
-            printf("\n");
+int block_execute(block *const block, const uint8_t button) {
+    // Ensure only one child process exists per block at an instance.
+    if (block->fork_pid != -1) {
+        return 0;
+    }
+
+    block->fork_pid = fork();
+    if (block->fork_pid == -1) {
+        (void)fprintf(
+            stderr, "error: could not create a subprocess for \"%s\" block\n",
+            block->command);
+        return 1;
+    }
+
+    if (block->fork_pid == 0) {
+        const int write_fd = block->pipe[WRITE_END];
+        int status = close(block->pipe[READ_END]);
+
+        if (button != 0) {
+            char button_str[4];
+            (void)snprintf(button_str, LEN(button_str), "%hhu", button);
+            status |= setenv("BLOCK_BUTTON", button_str, 1);
+        }
+
+        const char null = '\0';
+        if (status != 0) {
+            (void)write(write_fd, &null, sizeof(null));
             exit(EXIT_FAILURE);
         }
 
-        // Buffer will hold both '\n' and '\0'
-        char buffer[LEN(block->output) + 1];
-        if (fgets(buffer, LEN(buffer), file) == NULL) {
-            // Send an empty line in case of no output
-            printf("\n");
-            exit(EXIT_SUCCESS);
+        FILE *const file = popen(block->command, "r");
+        if (file == NULL) {
+            (void)write(write_fd, &null, sizeof(null));
+            exit(EXIT_FAILURE);
         }
-        pclose(file);
 
-        // Trim to the max possible UTF-8 capacity
-        trimUTF8(buffer, LEN(buffer));
+        // Ensure null-termination since fgets() will leave buffer untouched on
+        // no output.
+        char buffer[LEN(block->output)] = {[0] = null};
+        (void)fgets(buffer, LEN(buffer), file);
 
-        printf("%s\n", buffer);
+        // Remove trailing newlines.
+        const size_t length = strcspn(buffer, "\n");
+        buffer[length] = null;
+
+        // Exit if command execution failed or if file could not be closed.
+        if (pclose(file) != 0) {
+            (void)write(write_fd, &null, sizeof(null));
+            exit(EXIT_FAILURE);
+        }
+
+        const size_t output_size =
+            truncate_utf8_string(buffer, LEN(buffer), MAX_BLOCK_OUTPUT_LENGTH);
+        (void)write(write_fd, buffer, output_size);
+
         exit(EXIT_SUCCESS);
     }
+
+    return 0;
 }
 
-void execBlocks(unsigned int time) {
-    for (int i = 0; i < blockCount; i++) {
-        const Block *block = blocks + i;
-        if (time == 0 ||
-            (block->interval != 0 && time % block->interval == 0)) {
-            execBlock(block, NULL);
-        }
-    }
-}
-
-void updateBlock(Block *block) {
+int block_update(block *const block) {
     char buffer[LEN(block->output)];
-    int bytesRead = read(block->pipe[0], buffer, LEN(buffer));
 
-    // String from pipe will always end with '\n'
-    buffer[bytesRead - 1] = '\0';
+    const ssize_t bytes_read =
+        read(block->pipe[READ_END], buffer, LEN(buffer));
+    if (bytes_read == -1) {
+        (void)fprintf(stderr,
+                      "error: could not fetch output of \"%s\" block\n",
+                      block->command);
+        return 2;
+    }
 
-    strcpy(block->output, buffer);
+    // Collect exit-status of the subprocess to avoid zombification.
+    int fork_status = 0;
+    if (waitpid(block->fork_pid, &fork_status, 0) == -1) {
+        (void)fprintf(stderr,
+                      "error: could not obtain exit status for \"%s\" block\n",
+                      block->command);
+        return 2;
+    }
+    block->fork_pid = -1;
 
-    // Remove execution lock for the current block
-    execLock &= ~(1 << (block - blocks));
+    if (fork_status != 0) {
+        (void)fprintf(stderr,
+                      "error: \"%s\" block exited with non-zero status\n",
+                      block->command);
+        return 1;
+    }
+
+    (void)strcpy(block->output, buffer);
+
+    return 0;
+}
+
+bool block_must_run(const block *const block, const unsigned int time) {
+    if (time == 0) {
+        return true;
+    }
+
+    if (block->interval == 0) {
+        return false;
+    }
+
+    return time % block->interval == 0;
 }

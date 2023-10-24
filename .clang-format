@@ -1,6 +1,8 @@
 BasedOnStyle: Google
 IndentWidth: 4
+InsertBraces: true
 ColumnLimit: 79
-AlignArrayOfStructures: Left
-AlignConsecutiveMacros: true
+AlignConsecutiveMacros: Consecutive
 AllowShortFunctionsOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never

@@ -85,15 +85,14 @@ dwmblocks &
 
 ### Modifying the blocks
 
-You can define your status bar blocks in `config.c`:
+You can define your status bar blocks in `config.h`:
 
 ```c
-Block blocks[] = {
+#define BLOCKS(X) \
     ...
-    {"volume", 0,    5},
-    {"date",   1800, 1},
+    X("volume", 0, 5), \
+    X("date", 1800, 1), \
     ...
-}
 ```
 
 Each block has the following properties:
@@ -107,17 +106,21 @@ Each block has the following properties:
 Apart from defining the blocks, features can be toggled through `config.h`:
 
 ```c
-// Maximum possible length of output from block, expressed in number of characters.
-#define CMDLENGTH 50
+// String used to delimit block outputs in the status.
+#define DELIMITER "  "
 
-// The status bar's delimiter that appears in between each block.
-#define DELIMITER " "
+// Maximum number of Unicode characters that a block can output.
+#define MAX_BLOCK_OUTPUT_LENGTH 45
 
-// Adds a leading delimiter to the status bar, useful for powerline.
-#define LEADING_DELIMITER 1
 
-// Enable clickability for blocks. See the "Clickable blocks" section below.
+// Control whether blocks are clickable.
 #define CLICKABLE_BLOCKS 1
+
+// Control whether a leading delimiter should be prepended to the status.
+#define LEADING_DELIMITER 0
+
+// Control whether a trailing delimiter should be appended to the status.
+#define TRAILING_DELIMITER 0
 ```
 
 ### Signalling changes

@@ -1,6 +1,5 @@
-CompileFlags:
-  Add:
-    - "-I."
-    - "-I./inc"
-    - "-I.."
-    - "-I../inc"
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+  Includes:
+    IgnoreHeader: bits/getopt_core.h

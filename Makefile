@@ -3,18 +3,20 @@
 BIN := dwmblocks
 BUILD_DIR := build
 SRC_DIR := src
-INC_DIR := inc
+INC_DIR := include
 
 VERBOSE := 0
+LIBS := xcb-atom
 
 PREFIX := /usr/local
-CFLAGS := -Wall -Wextra -Ofast -I. -I$(INC_DIR)
-CFLAGS += -Wall -Wextra -Wno-missing-field-initializers
-LDLIBS := -lX11
+CFLAGS := -Ofast -I. -I$(INC_DIR)
+CFLAGS += -DBINARY=\"$(BIN)\" -D_POSIX_C_SOURCE=200809L
+CFLAGS += -Wall -Wpedantic -Wextra -Wswitch-enum
+CFLAGS += $(shell pkg-config --cflags $(LIBS))
+LDLIBS := $(shell pkg-config --libs $(LIBS))
 
-VPATH := $(SRC_DIR)
-OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
-OBJS += $(patsubst %.c,$(BUILD_DIR)/%.o,$(wildcard *.c))
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(subst $(SRC_DIR)/,$(BUILD_DIR)/,$(SRCS:.c=.o))
 
 INSTALL_DIR := $(DESTDIR)$(PREFIX)/bin
 
@@ -26,17 +28,15 @@ endif
 
 all: $(BUILD_DIR)/$(BIN)
 
-$(BUILD_DIR)/$(BIN): $(OBJS)
-	$(PRINTF) "LD" $@
-	$Q$(LINK.o) $^ $(LDLIBS) -o $@
-
-$(BUILD_DIR)/%.o: %.c config.h | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c config.h
+	$Qmkdir -p $(@D)
 	$(PRINTF) "CC" $@
 	$Q$(COMPILE.c) -o $@ $<
 
-$(BUILD_DIR):
-	$(PRINTF) "MKDIR" $@
-	$Qmkdir -p $@
+
+$(BUILD_DIR)/$(BIN): $(OBJS)
+	$(PRINTF) "LD" $@
+	$Q$(LINK.o) $^ $(LDLIBS) -o $@
 
 clean:
 	$(PRINTF) "CLEAN" $(BUILD_DIR)

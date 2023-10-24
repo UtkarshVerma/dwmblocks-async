@@ -1,157 +1,180 @@
-#define _GNU_SOURCE
-#include <signal.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/epoll.h>
-#include <sys/signalfd.h>
+#include "main.h"
 
-#include "bar.h"
+#include <stdbool.h>
+#include <stddef.h>
+
 #include "block.h"
+#include "cli.h"
+#include "config.h"
+#include "signal-handler.h"
+#include "status.h"
+#include "timer.h"
 #include "util.h"
+#include "watcher.h"
 #include "x11.h"
 
-static unsigned short statusContinue = 1;
-unsigned short debugMode = 0;
-static int epollFD, signalFD;
-static unsigned int timerTick = 0, maxInterval = 1;
+#define BLOCK(cmd, period, sig) \
+    {                           \
+        .command = cmd,         \
+        .interval = period,     \
+        .signal = sig,          \
+    },
 
-void signalHandler() {
-    struct signalfd_siginfo info;
-    read(signalFD, &info, sizeof(info));
-    unsigned int signal = info.ssi_signo;
+block blocks[] = {BLOCKS(BLOCK)};
+#undef BLOCK
 
-    static unsigned int timer = 0;
-    switch (signal) {
-        case SIGALRM:
-            // Schedule the next timer event and execute blocks
-            alarm(timerTick);
-            execBlocks(timer);
-
-            // Wrap `timer` to the interval [1, `maxInterval`]
-            timer = (timer + timerTick - 1) % maxInterval + 1;
-            return;
-        case SIGUSR1:
-            // Update all blocks on receiving SIGUSR1
-            execBlocks(0);
-            return;
-    }
-
-    for (int j = 0; j < blockCount; j++) {
-        const Block *block = blocks + j;
-        if (block->signal == signal - SIGRTMIN) {
-            char button[4];  // value can't be more than 255;
-            sprintf(button, "%d", info.ssi_int & 0xff);
-            execBlock(block, button);
-            break;
-        }
-    }
-}
-
-void termHandler() {
-    statusContinue = 0;
-}
-
-void setupSignals() {
-    sigset_t handledSignals;
-    sigemptyset(&handledSignals);
-    sigaddset(&handledSignals, SIGUSR1);
-    sigaddset(&handledSignals, SIGALRM);
-
-    // Append all block signals to `handledSignals`
-    for (int i = 0; i < blockCount; i++)
-        if (blocks[i].signal > 0)
-            sigaddset(&handledSignals, SIGRTMIN + blocks[i].signal);
-
-    // Create a signal file descriptor for epoll to watch
-    signalFD = signalfd(-1, &handledSignals, 0);
-
-    // Block all realtime and handled signals
-    for (int i = SIGRTMIN; i <= SIGRTMAX; i++) sigaddset(&handledSignals, i);
-    sigprocmask(SIG_BLOCK, &handledSignals, NULL);
-
-    // Handle termination signals
-    signal(SIGINT, termHandler);
-    signal(SIGTERM, termHandler);
-
-    // Avoid zombie subprocesses
-    struct sigaction signalAction;
-    signalAction.sa_handler = SIG_DFL;
-    sigemptyset(&signalAction.sa_mask);
-    signalAction.sa_flags = SA_NOCLDWAIT;
-    sigaction(SIGCHLD, &signalAction, 0);
-}
-
-void statusLoop() {
-    // Update all blocks initially
-    raise(SIGALRM);
-
-    BarStatus status;
-    initStatus(&status);
-    struct epoll_event events[blockCount + 1];
-    while (statusContinue) {
-        int eventCount = epoll_wait(epollFD, events, LEN(events), 100);
-        for (int i = 0; i < eventCount; i++) {
-            unsigned short id = events[i].data.u32;
-            if (id < blockCount) {
-                updateBlock(blocks + id);
-            } else {
-                signalHandler();
-            }
-        }
-
-        if (eventCount != -1) writeStatus(&status);
-    }
-    freeStatus(&status);
-}
-
-void init() {
-    epollFD = epoll_create(blockCount);
-    struct epoll_event event = {
-        .events = EPOLLIN,
-    };
-
-    for (int i = 0; i < blockCount; i++) {
-        // Append each block's pipe's read end to `epollFD`
-        pipe(blocks[i].pipe);
-        event.data.u32 = i;
-        epoll_ctl(epollFD, EPOLL_CTL_ADD, blocks[i].pipe[0], &event);
-
-        // Calculate the max interval and tick size for the timer
-        if (blocks[i].interval) {
-            maxInterval = MAX(blocks[i].interval, maxInterval);
-            timerTick = gcd(blocks[i].interval, timerTick);
+static int init_blocks(void) {
+    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+        block *const block = &blocks[i];
+        if (block_init(block) != 0) {
+            return 1;
         }
     }
 
-    setupSignals();
-
-    // Watch signal file descriptor as well
-    event.data.u32 = blockCount;
-    epoll_ctl(epollFD, EPOLL_CTL_ADD, signalFD, &event);
+    return 0;
 }
 
-int main(const int argc, const char *argv[]) {
-    if (setupX()) {
-        fprintf(stderr, "%s\n", "dwmblocks: Failed to open display");
+static int deinit_blocks(void) {
+    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+        block *const block = &blocks[i];
+        if (block_deinit(block) != 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int execute_blocks(const unsigned int time) {
+    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+        block *const block = &blocks[i];
+        if (!block_must_run(block, time)) {
+            continue;
+        }
+
+        if (block_execute(&blocks[i], 0) != 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int trigger_event(timer *const timer) {
+    if (execute_blocks(timer->time) != 0) {
         return 1;
     }
 
-    for (int i = 0; i < argc; i++) {
-        if (!strcmp("-d", argv[i])) {
-            debugMode = 1;
-            break;
+    if (timer_arm(timer) != 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int refresh_callback(void) {
+    if (execute_blocks(0) != 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int event_loop(const bool is_debug_mode,
+                      x11_connection *const connection,
+                      signal_handler *const signal_handler) {
+    timer timer = timer_new();
+
+    // Kickstart the event loop with an initial execution.
+    if (trigger_event(&timer) != 0) {
+        return 1;
+    }
+
+    watcher watcher;
+    if (watcher_init(&watcher, signal_handler->fd) != 0) {
+        return 1;
+    }
+
+    status status = status_new();
+    bool is_alive = true;
+    while (is_alive) {
+        const int event_count = watcher_poll(&watcher, -1);
+        if (event_count == -1) {
+            return 1;
+        }
+
+        int i = 0;
+        for (unsigned short j = 0; j < WATCHER_FD_COUNT; ++j) {
+            if (i == event_count) {
+                break;
+            }
+
+            const watcher_fd *const watcher_fd = &watcher.fds[j];
+            if (!watcher_fd_is_readable(watcher_fd)) {
+                continue;
+            }
+
+            ++i;
+
+            if (j == SIGNAL_FD) {
+                is_alive = signal_handler_process(signal_handler, &timer) == 0;
+                continue;
+            }
+
+            block *const block = &blocks[j];
+            (void)block_update(block);
+        }
+
+        const bool has_status_changed = status_update(&status);
+        if (has_status_changed) {
+            if (status_write(&status, is_debug_mode, connection) != 0) {
+                return 1;
+            }
         }
     }
 
-    init();
-    statusLoop();
-
-    if (closeX())
-        fprintf(stderr, "%s\n", "dwmblocks: Failed to close display");
-
-    close(epollFD);
-    close(signalFD);
-    for (int i = 0; i < blockCount; i++) closePipe(blocks[i].pipe);
-
     return 0;
+}
+
+int main(const int argc, const char *const argv[]) {
+    cli_arguments cli_args;
+    if (cli_init(&cli_args, argv, argc) != 0) {
+        return 1;
+    }
+
+    x11_connection *const connection = x11_connection_open();
+    if (connection == NULL) {
+        return 1;
+    }
+
+    int status = 0;
+    if (init_blocks() != 0) {
+        status = 1;
+        goto x11_close;
+    }
+
+    signal_handler signal_handler =
+        signal_handler_new(refresh_callback, trigger_event);
+    if (signal_handler_init(&signal_handler) != 0) {
+        status = 1;
+        goto deinit_blocks;
+    }
+
+    if (event_loop(cli_args.is_debug_mode, connection, &signal_handler) != 0) {
+        status = 1;
+    }
+
+    if (signal_handler_deinit(&signal_handler) != 0) {
+        status = 1;
+    }
+
+deinit_blocks:
+    if (deinit_blocks() != 0) {
+        status = 1;
+    }
+
+x11_close:
+    x11_connection_close(connection);
+
+    return status;
 }

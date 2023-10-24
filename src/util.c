@@ -1,41 +1,50 @@
 #include "util.h"
 
-#include <unistd.h>
+#include <stdio.h>
+#define UTF8_MULTIBYTE_BIT BIT(7)
 
-int gcd(int a, int b) {
-    int temp;
+unsigned int gcd(unsigned int a, unsigned int b) {
     while (b > 0) {
-        temp = a % b;
+        const unsigned int temp = a % b;
         a = b;
         b = temp;
     }
+
     return a;
 }
 
-void closePipe(int pipe[2]) {
-    close(pipe[0]);
-    close(pipe[1]);
-}
-
-void trimUTF8(char* buffer, unsigned int size) {
-    int length = (size - 1) / 4;
-    int count = 0, j = 0;
-    char ch = buffer[j];
-    while (ch != '\0' && ch != '\n' && count < length) {
-        // Skip continuation bytes, if any
-        int skip = 1;
-        while ((ch & 0xc0) > 0x80) {
-            ch <<= 1;
-            skip++;
+size_t truncate_utf8_string(char* const buffer, const size_t size,
+                            const size_t char_limit) {
+    size_t char_count = 0;
+    size_t i = 0;
+    while (char_count < char_limit) {
+        char ch = buffer[i];
+        if (ch == '\0') {
+            break;
         }
 
-        j += skip;
-        ch = buffer[j];
-        count++;
+        unsigned short skip = 1;
+
+        // Multibyte unicode character
+        if ((ch & UTF8_MULTIBYTE_BIT) != 0) {
+            // Skip continuation bytes.
+            ch <<= 1;
+            while ((ch & UTF8_MULTIBYTE_BIT) != 0) {
+                ch <<= 1;
+                ++skip;
+            }
+        }
+
+        // Avoid buffer overflow.
+        if (i + skip >= size) {
+            break;
+        }
+
+        ++char_count;
+        i += skip;
     }
 
-    // Trim trailing newline and spaces
-    buffer[j] = ' ';
-    while (j >= 0 && buffer[j] == ' ') j--;
-    buffer[j + 1] = '\0';
+    buffer[i] = '\0';
+
+    return i + 1;
 }
