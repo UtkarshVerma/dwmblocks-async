@@ -112,7 +112,6 @@ Apart from defining the blocks, features can be toggled through `config.h`:
 // Maximum number of Unicode characters that a block can output.
 #define MAX_BLOCK_OUTPUT_LENGTH 45
 
-
 // Control whether blocks are clickable.
 #define CLICKABLE_BLOCKS 1
 
