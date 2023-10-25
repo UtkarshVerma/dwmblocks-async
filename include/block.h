@@ -17,6 +17,8 @@ typedef struct {
     pid_t fork_pid;
 } block;
 
+block block_new(const char *const command, const unsigned int interval,
+                const int signal);
 int block_init(block *const block);
 int block_deinit(block *const block);
 int block_execute(block *const block, const uint8_t button);

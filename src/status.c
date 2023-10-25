@@ -6,18 +6,20 @@
 
 #include "block.h"
 #include "config.h"
-#include "main.h"
-#include "util.h"
 #include "x11.h"
 
 static bool has_status_changed(const status *const status) {
     return strcmp(status->current, status->previous) != 0;
 }
 
-status status_new(void) {
+status status_new(const block *const blocks,
+                  const unsigned short block_count) {
     status status = {
         .current = {[0] = '\0'},
         .previous = {[0] = '\0'},
+
+        .blocks = blocks,
+        .block_count = block_count,
     };
 
     return status;
@@ -27,8 +29,8 @@ bool status_update(status *const status) {
     (void)strcpy(status->previous, status->current);
     status->current[0] = '\0';
 
-    for (unsigned short i = 0; i < LEN(blocks); ++i) {
-        const block *const block = &blocks[i];
+    for (unsigned short i = 0; i < status->block_count; ++i) {
+        const block *const block = &status->blocks[i];
 
         if (strlen(block->output) > 0) {
 #if LEADING_DELIMITER

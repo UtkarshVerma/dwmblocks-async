@@ -2,6 +2,8 @@
 
 #include <signal.h>
 
+#include "block.h"
+
 #define TIMER_SIGNAL SIGALRM
 
 typedef struct {
@@ -10,5 +12,5 @@ typedef struct {
     const unsigned int reset_value;
 } timer;
 
-timer timer_new(void);
+timer timer_new(const block *const blocks, const unsigned short block_count);
 int timer_arm(timer *const timer);

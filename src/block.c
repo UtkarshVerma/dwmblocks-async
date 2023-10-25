@@ -14,6 +14,20 @@
 #include "config.h"
 #include "util.h"
 
+block block_new(const char *const command, const unsigned int interval,
+                const int signal) {
+    block block = {
+        .command = command,
+        .interval = interval,
+        .signal = signal,
+
+        .output = {[0] = '\0'},
+        .fork_pid = -1,
+    };
+
+    return block;
+}
+
 int block_init(block *const block) {
     if (pipe(block->pipe) != 0) {
         (void)fprintf(stderr,
@@ -21,8 +35,6 @@ int block_init(block *const block) {
                       block->command);
         return 1;
     }
-
-    block->fork_pid = -1;
 
     return 0;
 }

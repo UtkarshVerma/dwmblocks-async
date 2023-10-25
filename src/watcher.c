@@ -5,8 +5,18 @@
 #include <stdio.h>
 #include <sys/poll.h>
 
-#include "main.h"
+#include "block.h"
 #include "util.h"
+
+watcher watcher_new(const block* const blocks,
+                    const unsigned short block_count) {
+    watcher watcher = {
+        .blocks = blocks,
+        .block_count = block_count,
+    };
+
+    return watcher;
+}
 
 int watcher_init(watcher* const watcher, const int signal_fd) {
     if (signal_fd == -1) {
@@ -19,8 +29,8 @@ int watcher_init(watcher* const watcher, const int signal_fd) {
     fd->fd = signal_fd;
     fd->events = POLLIN;
 
-    for (unsigned short i = 0; i < LEN(blocks); ++i) {
-        const int block_fd = blocks[i].pipe[READ_END];
+    for (unsigned short i = 0; i < watcher->block_count; ++i) {
+        const int block_fd = watcher->blocks[i].pipe[READ_END];
         if (block_fd == -1) {
             fprintf(
                 stderr,

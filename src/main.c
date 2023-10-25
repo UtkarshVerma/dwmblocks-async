@@ -13,18 +13,8 @@
 #include "watcher.h"
 #include "x11.h"
 
-#define BLOCK(cmd, period, sig) \
-    {                           \
-        .command = cmd,         \
-        .interval = period,     \
-        .signal = sig,          \
-    },
-
-block blocks[] = {BLOCKS(BLOCK)};
-#undef BLOCK
-
-static int init_blocks(void) {
-    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+static int init_blocks(block *const blocks, const unsigned short block_count) {
+    for (unsigned short i = 0; i < block_count; ++i) {
         block *const block = &blocks[i];
         if (block_init(block) != 0) {
             return 1;
@@ -34,8 +24,9 @@ static int init_blocks(void) {
     return 0;
 }
 
-static int deinit_blocks(void) {
-    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+static int deinit_blocks(block *const blocks,
+                         const unsigned short block_count) {
+    for (unsigned short i = 0; i < block_count; ++i) {
         block *const block = &blocks[i];
         if (block_deinit(block) != 0) {
             return 1;
@@ -45,8 +36,10 @@ static int deinit_blocks(void) {
     return 0;
 }
 
-static int execute_blocks(const unsigned int time) {
-    for (unsigned short i = 0; i < LEN(blocks); ++i) {
+static int execute_blocks(block *const blocks,
+                          const unsigned short block_count,
+                          const unsigned int time) {
+    for (unsigned short i = 0; i < block_count; ++i) {
         block *const block = &blocks[i];
         if (!block_must_run(block, time)) {
             continue;
@@ -60,8 +53,9 @@ static int execute_blocks(const unsigned int time) {
     return 0;
 }
 
-static int trigger_event(timer *const timer) {
-    if (execute_blocks(timer->time) != 0) {
+static int trigger_event(block *const blocks, const unsigned short block_count,
+                         timer *const timer) {
+    if (execute_blocks(blocks, block_count, timer->time) != 0) {
         return 1;
     }
 
@@ -72,30 +66,32 @@ static int trigger_event(timer *const timer) {
     return 0;
 }
 
-static int refresh_callback(void) {
-    if (execute_blocks(0) != 0) {
+static int refresh_callback(block *const blocks,
+                            const unsigned short block_count) {
+    if (execute_blocks(blocks, block_count, 0) != 0) {
         return 1;
     }
 
     return 0;
 }
 
-static int event_loop(const bool is_debug_mode,
+static int event_loop(block *const blocks, const unsigned short block_count,
+                      const bool is_debug_mode,
                       x11_connection *const connection,
                       signal_handler *const signal_handler) {
-    timer timer = timer_new();
+    timer timer = timer_new(blocks, block_count);
 
     // Kickstart the event loop with an initial execution.
-    if (trigger_event(&timer) != 0) {
+    if (trigger_event(blocks, block_count, &timer) != 0) {
         return 1;
     }
 
-    watcher watcher;
+    watcher watcher = watcher_new(blocks, block_count);
     if (watcher_init(&watcher, signal_handler->fd) != 0) {
         return 1;
     }
 
-    status status = status_new();
+    status status = status_new(blocks, block_count);
     bool is_alive = true;
     while (is_alive) {
         const int event_count = watcher_poll(&watcher, -1);
@@ -147,20 +143,26 @@ int main(const int argc, const char *const argv[]) {
         return 1;
     }
 
+#define BLOCK(command, interval, signal) block_new(command, interval, signal),
+    block blocks[BLOCK_COUNT] = {BLOCKS(BLOCK)};
+#undef BLOCK
+    const unsigned short block_count = LEN(blocks);
+
     int status = 0;
-    if (init_blocks() != 0) {
+    if (init_blocks(blocks, block_count) != 0) {
         status = 1;
         goto x11_close;
     }
 
-    signal_handler signal_handler =
-        signal_handler_new(refresh_callback, trigger_event);
+    signal_handler signal_handler = signal_handler_new(
+        blocks, block_count, refresh_callback, trigger_event);
     if (signal_handler_init(&signal_handler) != 0) {
         status = 1;
         goto deinit_blocks;
     }
 
-    if (event_loop(cli_args.is_debug_mode, connection, &signal_handler) != 0) {
+    if (event_loop(blocks, block_count, cli_args.is_debug_mode, connection,
+                   &signal_handler) != 0) {
         status = 1;
     }
 
@@ -169,7 +171,7 @@ int main(const int argc, const char *const argv[]) {
     }
 
 deinit_blocks:
-    if (deinit_blocks() != 0) {
+    if (deinit_blocks(blocks, block_count) != 0) {
         status = 1;
     }
 
