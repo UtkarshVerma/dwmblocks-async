@@ -1,6 +1,5 @@
 #include "util.h"
 
-#include <stdio.h>
 #define UTF8_MULTIBYTE_BIT BIT(7)
 
 unsigned int gcd(unsigned int a, unsigned int b) {
