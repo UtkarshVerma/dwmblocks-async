@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TIMER_H
+#define TIMER_H
 
 #include <signal.h>
 
@@ -14,3 +15,5 @@ typedef struct {
 
 timer timer_new(const block *const blocks, const unsigned short block_count);
 int timer_arm(timer *const timer);
+
+#endif  // TIMER_H

@@ -8,7 +8,7 @@
 x11_connection *x11_connection_open(void) {
     xcb_connection_t *const connection = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(connection)) {
-        (void)fprintf(stderr, "error: could not connect to the X server\n");
+        (void)fprintf(stderr, "error: could not connect to X server\n");
         return NULL;
     }
 

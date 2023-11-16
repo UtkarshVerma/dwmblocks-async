@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 #include <signal.h>
 
@@ -11,3 +12,5 @@
 #define X(...) "."
 enum { BLOCK_COUNT = LEN(BLOCKS(X)) - 1 };
 #undef X
+
+#endif  // MAIN_H

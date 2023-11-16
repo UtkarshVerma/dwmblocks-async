@@ -6,6 +6,7 @@
 
 #include "block.h"
 #include "config.h"
+#include "util.h"
 #include "x11.h"
 
 static bool has_status_changed(const status *const status) {
@@ -26,7 +27,7 @@ status status_new(const block *const blocks,
 }
 
 bool status_update(status *const status) {
-    (void)strcpy(status->previous, status->current);
+    (void)strncpy(status->previous, status->current, LEN(status->current));
     status->current[0] = '\0';
 
     for (unsigned short i = 0; i < status->block_count; ++i) {
@@ -34,27 +35,27 @@ bool status_update(status *const status) {
 
         if (strlen(block->output) > 0) {
 #if LEADING_DELIMITER
-            (void)strcat(status->current, DELIMITER);
+            (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
 #else
             if (status->current[0] != '\0') {
-                (void)strcat(status->current, DELIMITER);
+                (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
             }
 #endif
 
 #if CLICKABLE_BLOCKS
             if (block->signal > 0) {
                 const char signal[] = {(char)block->signal, '\0'};
-                (void)strcat(status->current, signal);
+                (void)strncat(status->current, signal, LEN(signal));
             }
 #endif
 
-            (void)strcat(status->current, block->output);
+            (void)strncat(status->current, block->output, LEN(block->output));
         }
     }
 
 #if TRAILING_DELIMITER
     if (status->current[0] != '\0') {
-        (void)strcat(status->current, DELIMITER);
+        (void)strcat(status->current, DELIMITER, LEN(DELIMITER));
     }
 #endif
 

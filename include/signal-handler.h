@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SIGNAL_HANDLER_H
+#define SIGNAL_HANDLER_H
 
 #include <bits/types/sigset_t.h>
 
@@ -28,3 +29,5 @@ signal_handler signal_handler_new(
 int signal_handler_init(signal_handler* const handler);
 int signal_handler_deinit(signal_handler* const handler);
 int signal_handler_process(signal_handler* const handler, timer* const timer);
+
+#endif  // SIGNAL_HANDLER_H

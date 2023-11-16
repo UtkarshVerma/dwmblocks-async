@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONFIG_H
+#define CONFIG_H
 
 // String used to delimit block outputs in the status.
 #define DELIMITER "  "
@@ -27,3 +28,5 @@
     X("sb-volume", 0, 8)  \
     X("sb-battery", 5, 9) \
     X("sb-date", 1, 10)
+
+#endif  // CONFIG_H

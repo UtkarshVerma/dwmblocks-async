@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CLI_H
+#define CLI_H
 
 #include <stdbool.h>
 
@@ -8,3 +9,5 @@ typedef struct {
 
 int cli_init(cli_arguments* const args, const char* const argv[],
              const int argc);
+
+#endif  // CLI_H

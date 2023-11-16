@@ -1,4 +1,5 @@
-#pragma once
+#ifndef STATUS_H
+#define STATUS_H
 
 #include <stdbool.h>
 
@@ -26,3 +27,5 @@ status status_new(const block* const blocks, const unsigned short block_count);
 bool status_update(status* const status);
 int status_write(const status* const status, const bool is_debug_mode,
                  x11_connection* const connection);
+
+#endif  // STATUS_H

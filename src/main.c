@@ -86,46 +86,30 @@ static int event_loop(block *const blocks, const unsigned short block_count,
         return 1;
     }
 
-    watcher watcher = watcher_new(blocks, block_count);
-    if (watcher_init(&watcher, signal_handler->fd) != 0) {
+    watcher watcher;
+    if (watcher_init(&watcher, blocks, block_count, signal_handler->fd) != 0) {
         return 1;
     }
 
     status status = status_new(blocks, block_count);
     bool is_alive = true;
     while (is_alive) {
-        const int event_count = watcher_poll(&watcher, -1);
-        if (event_count == -1) {
+        if (watcher_poll(&watcher, -1) != 0) {
             return 1;
         }
 
-        int i = 0;
-        for (unsigned short j = 0; j < WATCHER_FD_COUNT; ++j) {
-            if (i == event_count) {
-                break;
-            }
+        if (watcher.got_signal) {
+            is_alive = signal_handler_process(signal_handler, &timer) == 0;
+        }
 
-            const watcher_fd *const watcher_fd = &watcher.fds[j];
-            if (!watcher_fd_is_readable(watcher_fd)) {
-                continue;
-            }
-
-            ++i;
-
-            if (j == SIGNAL_FD) {
-                is_alive = signal_handler_process(signal_handler, &timer) == 0;
-                continue;
-            }
-
-            block *const block = &blocks[j];
-            (void)block_update(block);
+        for (unsigned short i = 0; i < watcher.active_block_count; ++i) {
+            (void)block_update(&blocks[watcher.active_blocks[i]]);
         }
 
         const bool has_status_changed = status_update(&status);
-        if (has_status_changed) {
-            if (status_write(&status, is_debug_mode, connection) != 0) {
-                return 1;
-            }
+        if (has_status_changed &&
+            status_write(&status, is_debug_mode, connection) != 0) {
+            return 1;
         }
     }
 

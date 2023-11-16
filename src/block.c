@@ -141,7 +141,7 @@ int block_update(block *const block) {
         return 1;
     }
 
-    (void)strcpy(block->output, buffer);
+    (void)strncpy(block->output, buffer, LEN(buffer));
 
     return 0;
 }
