@@ -55,7 +55,7 @@ bool status_update(status *const status) {
 
 #if TRAILING_DELIMITER
     if (status->current[0] != '\0') {
-        (void)strcat(status->current, DELIMITER, LEN(DELIMITER));
+        (void)strncat(status->current, DELIMITER, LEN(DELIMITER));
     }
 #endif
 
