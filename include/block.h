@@ -1,7 +1,7 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#include <bits/stdint-uintn.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <sys/types.h>
 

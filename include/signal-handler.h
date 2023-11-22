@@ -1,7 +1,7 @@
 #ifndef SIGNAL_HANDLER_H
 #define SIGNAL_HANDLER_H
 
-#include <bits/types/sigset_t.h>
+#include <signal.h>
 
 #include "block.h"
 #include "timer.h"

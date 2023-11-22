@@ -1,7 +1,6 @@
 #include "block.h"
 
-#include <bits/stdint-uintn.h>
-#include <bits/types/FILE.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>

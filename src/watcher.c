@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/poll.h>
+#include <poll.h>
 
 #include "block.h"
 #include "util.h"

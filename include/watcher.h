@@ -2,7 +2,7 @@
 #define WATCHER_H
 
 #include <stdbool.h>
-#include <sys/poll.h>
+#include <poll.h>
 
 #include "block.h"
 #include "main.h"
