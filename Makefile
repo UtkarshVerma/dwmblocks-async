@@ -33,7 +33,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c config.h
 	$(PRINTF) "CC" $@
 	$Q$(COMPILE.c) -o $@ $<
 
-
 $(BUILD_DIR)/$(BIN): $(OBJS)
 	$(PRINTF) "LD" $@
 	$Q$(LINK.o) $^ $(LDLIBS) -o $@
