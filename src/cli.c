@@ -15,10 +15,10 @@ int cli_init(cli_arguments *const args, const char *const argv[],
             case 'd':
                 args->is_debug_mode = true;
                 break;
-            case 'h':
-                // fall through
             case '?':
                 (void)fprintf(stderr, "error: unknown option `-%c'\n", optopt);
+                // fall through
+            case 'h':
                 // fall through
             default:
                 (void)fprintf(stderr, "usage: %s [-d]\n", BINARY);
