@@ -1,8 +1,7 @@
 #include "signal-handler.h"
 
-#include <bits/stdint-uintn.h>
-#include <bits/types/sigset_t.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>

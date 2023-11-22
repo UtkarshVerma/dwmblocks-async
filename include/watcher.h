@@ -1,8 +1,8 @@
 #ifndef WATCHER_H
 #define WATCHER_H
 
+#include <poll.h>
 #include <stdbool.h>
-#include <sys/poll.h>
 
 #include "block.h"
 #include "main.h"

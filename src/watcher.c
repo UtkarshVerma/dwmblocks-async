@@ -1,9 +1,9 @@
 #include "watcher.h"
 
 #include <errno.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/poll.h>
 
 #include "block.h"
 #include "util.h"

@@ -1,9 +1,8 @@
 #include "block.h"
 
-#include <bits/stdint-uintn.h>
-#include <bits/types/FILE.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

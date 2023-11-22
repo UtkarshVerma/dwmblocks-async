@@ -1,8 +1,8 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#include <bits/stdint-uintn.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #include "config.h"
