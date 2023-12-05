@@ -18,15 +18,13 @@
 
 // Define blocks for the status feed as X(cmd, interval, signal).
 #define BLOCKS(X)         \
-    X("sb-mail", 600, 1)  \
-    X("sb-music", 0, 2)   \
-    X("sb-disk", 1800, 3) \
-    X("sb-memory", 10, 4) \
-    X("sb-loadavg", 5, 5) \
-    X("sb-mic", 0, 6)     \
-    X("sb-record", 0, 7)  \
-    X("sb-volume", 0, 8)  \
-    X("sb-battery", 5, 9) \
-    X("sb-date", 1, 10)
+
+    X("dwmb-curr_song",	 0  , 3)  \
+    X("dwmb-volume",	 0  , 1)  \
+    X("dwmb-memory",	 10 , 2)  \
+    X("dwmb-cpu_temp",	 10 , 0)  \
+    X("dwmb-date",	 180, 0)  \
+    X("dwmb-clock",	 1  , 0)  \
+    X("dwmb-battery",	 30 , 0)  
 
 #endif  // CONFIG_H
