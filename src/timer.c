@@ -1,6 +1,7 @@
 #include "timer.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -32,10 +33,12 @@ static unsigned int compute_reset_value(const block *const blocks,
 }
 
 timer timer_new(const block *const blocks, const unsigned short block_count) {
+    const unsigned int reset_value = compute_reset_value(blocks, block_count);
+
     timer timer = {
-        .time = 0,
+        .time = reset_value,  // Initial value to execute all blocks.
         .tick = compute_tick(blocks, block_count),
-        .reset_value = compute_reset_value(blocks, block_count),
+        .reset_value = reset_value,
     };
 
     return timer;
@@ -51,7 +54,19 @@ int timer_arm(timer *const timer) {
     }
 
     // Wrap `time` to the interval [1, reset_value].
-    timer->time = (timer->time + timer->tick) % timer->reset_value + 1;
+    timer->time = (timer->time + timer->tick) % timer->reset_value;
 
     return 0;
+}
+
+bool timer_must_run_block(const timer *const timer, const block *const block) {
+    if (timer->time == timer->reset_value) {
+        return true;
+    }
+
+    if (block->interval == 0) {
+        return false;
+    }
+
+    return timer->time % block->interval == 0;
 }

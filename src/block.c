@@ -144,15 +144,3 @@ int block_update(block *const block) {
 
     return 0;
 }
-
-bool block_must_run(const block *const block, const unsigned int time) {
-    if (time == 0) {
-        return true;
-    }
-
-    if (block->interval == 0) {
-        return false;
-    }
-
-    return time % block->interval == 0;
-}

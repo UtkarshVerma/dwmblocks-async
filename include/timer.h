@@ -2,6 +2,7 @@
 #define TIMER_H
 
 #include <signal.h>
+#include <stdbool.h>
 
 #include "block.h"
 
@@ -15,5 +16,6 @@ typedef struct {
 
 timer timer_new(const block *const blocks, const unsigned short block_count);
 int timer_arm(timer *const timer);
+bool timer_must_run_block(const timer *const timer, const block *const block);
 
 #endif  // TIMER_H

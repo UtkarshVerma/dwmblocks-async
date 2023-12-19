@@ -1,5 +1,6 @@
 #include "main.h"
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -38,10 +39,10 @@ static int deinit_blocks(block *const blocks,
 
 static int execute_blocks(block *const blocks,
                           const unsigned short block_count,
-                          const unsigned int time) {
+                          const timer *const timer) {
     for (unsigned short i = 0; i < block_count; ++i) {
         block *const block = &blocks[i];
-        if (!block_must_run(block, time)) {
+        if (!timer_must_run_block(timer, block)) {
             continue;
         }
 
@@ -55,7 +56,7 @@ static int execute_blocks(block *const blocks,
 
 static int trigger_event(block *const blocks, const unsigned short block_count,
                          timer *const timer) {
-    if (execute_blocks(blocks, block_count, timer->time) != 0) {
+    if (execute_blocks(blocks, block_count, timer) != 0) {
         return 1;
     }
 
@@ -117,8 +118,8 @@ static int event_loop(block *const blocks, const unsigned short block_count,
 }
 
 int main(const int argc, const char *const argv[]) {
-    cli_arguments cli_args;
-    if (cli_init(&cli_args, argv, argc) != 0) {
+    const cli_arguments cli_args = cli_parse_arguments(argv, argc);
+    if (errno != 0) {
         return 1;
     }
 
