@@ -5,6 +5,7 @@ BUILD_DIR := build
 SRC_DIR := src
 INC_DIR := include
 
+DEBUG := 0
 VERBOSE := 0
 LIBS := xcb-atom
 
@@ -24,6 +25,10 @@ INSTALL_DIR := $(DESTDIR)$(PREFIX)/bin
 PRINTF := @printf "%-8s %s\n"
 ifeq ($(VERBOSE), 0)
 	Q := @
+endif
+
+ifeq ($(DEBUG), 1)
+	CFLAGS += -g
 endif
 
 all: $(BUILD_DIR)/$(BIN)
