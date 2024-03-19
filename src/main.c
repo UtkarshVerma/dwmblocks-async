@@ -69,7 +69,7 @@ static int trigger_event(block *const blocks, const unsigned short block_count,
 
 static int refresh_callback(block *const blocks,
                             const unsigned short block_count) {
-    if (execute_blocks(blocks, block_count, 0) != 0) {
+    if (execute_blocks(blocks, block_count, NULL) != 0) {
         return 1;
     }
 

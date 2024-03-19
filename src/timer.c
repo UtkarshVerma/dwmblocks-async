@@ -60,7 +60,7 @@ int timer_arm(timer *const timer) {
 }
 
 bool timer_must_run_block(const timer *const timer, const block *const block) {
-    if (timer->time == timer->reset_value) {
+    if (timer == NULL || timer->time == timer->reset_value) {
         return true;
     }
 
