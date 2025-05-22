@@ -9,6 +9,10 @@ DEBUG := 0
 VERBOSE := 0
 LIBS := xcb-atom
 
+ifeq ($(shell uname), FreeBSD)
+LIBS += epoll-shim
+endif
+
 PREFIX := /usr/local
 CFLAGS := -Ofast -I. -I$(INC_DIR) -std=c99
 CFLAGS += -DBINARY=\"$(BIN)\" -D_POSIX_C_SOURCE=200809L
