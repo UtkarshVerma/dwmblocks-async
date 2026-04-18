@@ -22,6 +22,7 @@
     X("", "sb-music", 0, 2)   \
     X("", "sb-disk", 1800, 3) \
     X("", "sb-memory", 10, 4) \
+    X("", "sb-swap", 10, 0)   \
     X("", "sb-loadavg", 5, 5) \
     X("", "sb-mic", 0, 6)     \
     X("", "sb-record", 0, 7)  \
